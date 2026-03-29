@@ -18,7 +18,7 @@ const serviceSchema = z.object({
   price: z.string().optional().or(z.literal('')),
   status: z.enum(['ACTIVE', 'INACTIVE']),
   icon: z.string().optional().or(z.literal('')),
-  order: z.coerce.number().int().min(0),
+  order: z.number().int().min(0),
 });
 
 export type ServiceFormValues = z.infer<typeof serviceSchema>;
@@ -41,11 +41,11 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
       price: initialData?.price || '',
       status: initialData?.status || 'ACTIVE',
       icon: initialData?.icon || '',
-      order: initialData?.order || 0,
+      order: Number(initialData?.order) || 0,
     },
   });
 
-  const { register, handleSubmit } = form;
+  const { register, handleSubmit, setValue } = form;
 
   const onSubmit: SubmitHandler<ServiceFormValues> = async (data) => {
     setIsSaving(true);
@@ -69,12 +69,32 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/admin/servicos" className="p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"><ArrowLeft size={20} /></Link>
-          <div><h1 className="text-2xl font-bold text-gray-900">{initialData ? 'Editar Serviço' : 'Novo Serviço'}</h1></div>
+          <Link href="/admin/servicos" className="p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{initialData ? 'Editar Serviço' : 'Novo Serviço'}</h1>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => { form.setValue('status', 'INACTIVE'); void handleSubmit(onSubmit)(); }} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Save size={18} /> Inativo</button>
-          <button type="submit" disabled={isSaving} className="px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors disabled:opacity-70" onClick={() => form.setValue('status', 'ACTIVE')}><CheckCircle2 size={18} /> {isSaving ? 'Salvando...' : 'Salvar'}</button>
+          <button 
+            type="button" 
+            onClick={() => { 
+              setValue('status', 'INACTIVE'); 
+              void handleSubmit(onSubmit)(); 
+            }} 
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <Save size={18} /> Inativo
+          </button>
+          <button 
+            type="submit" 
+            disabled={isSaving} 
+            className="px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors disabled:opacity-70" 
+            onClick={() => setValue('status', 'ACTIVE')}
+          >
+            <CheckCircle2 size={18} /> {isSaving ? 'Salvando...' : 'Salvar'}
+          </button>
         </div>
       </div>
 
@@ -93,7 +113,11 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Ordem</label>
-          <input type="number" {...register('order')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm" />
+          <input 
+            type="number" 
+            {...register('order', { valueAsNumber: true })} 
+            className="w-full border border-gray-200 rounded-lg p-2.5 text-sm" 
+          />
         </div>
       </div>
     </form>

@@ -48,12 +48,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const { integrations, general } = await getCachedPublicSettingsBundle();
+  
+  // Cast explícito para evitar erro de 'unknown' no JSX
   const i = integrations as Record<string, string | undefined>;
 
   return (
     <html lang="pt-BR" className={`${inter.variable} ${playfair.variable} scroll-smooth`}>
       <head>
-        {i.gaId && (
+        {typeof i.gaId === 'string' && i.gaId && (
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${i.gaId}`}
@@ -73,7 +75,7 @@ export default async function RootLayout({
             />
           </>
         )}
-        {i.gtmId && (
+        {typeof i.gtmId === 'string' && i.gtmId && (
           <Script
             id="gtm-init"
             strategy="afterInteractive"
@@ -88,7 +90,7 @@ export default async function RootLayout({
             }}
           />
         )}
-        {i.fbPixelId && (
+        {typeof i.fbPixelId === 'string' && i.fbPixelId && (
           <Script
             id="fb-pixel-init"
             strategy="afterInteractive"
@@ -108,7 +110,7 @@ export default async function RootLayout({
             }}
           />
         )}
-        {i.headScripts && (
+        {typeof i.headScripts === 'string' && i.headScripts && (
           <div dangerouslySetInnerHTML={{ __html: i.headScripts }} />
         )}
       </head>
