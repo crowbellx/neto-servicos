@@ -1,0 +1,121 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-laranja: #F07A2A;
+  --color-roxo: #7B2D8B;
+  --color-teal: #1B9E7A;
+  --color-azul: #1A5F9E;
+  --color-magenta: #C42060;
+  --color-ambar: #E8B84B;
+  --color-grafite: #1A1A2E;
+  --color-branco: #F5F5F7;
+  --color-laranja-light: #FDE8D4;
+  --color-roxo-light: #EFE0F5;
+  --color-teal-light: #D4F0E8;
+  --color-azul-light: #D4E6F5;
+  --color-grafite-mid: #2D2D45;
+  --color-grafite-soft: #3D3D58;
+  --color-t-primary: #1A1A2E;
+  --color-t-secondary: #4A4A6A;
+  --color-t-muted: #8A8AA0;
+  --color-t-white: #FFFFFF;
+  --color-t-white-70: rgba(255, 255, 255, 0.7);
+
+  --font-display: var(--font-display), Georgia, serif;
+  --font-titulo: var(--font-titulo), 'Helvetica Neue', sans-serif;
+  --font-corpo: var(--font-corpo), 'Gill Sans', sans-serif;
+}
+
+:root {
+  /* Gradiente de marca */
+  --g-marca: linear-gradient(
+    135deg,
+    #7B2D8B 0%,
+    #C42060 22%,
+    #F07A2A 44%,
+    #E8B84B 60%,
+    #1B9E7A 80%,
+    #1A5F9E 100%
+  );
+
+  /* Sombras */
+  --shadow-sm: 0 2px 8px rgba(26, 26, 46, 0.08);
+  --shadow-md: 0 8px 24px rgba(26, 26, 46, 0.12);
+  --shadow-lg: 0 16px 48px rgba(26, 26, 46, 0.16);
+  --shadow-cor: 0 8px 32px rgba(240, 122, 42, 0.25);
+
+  /* Escala tipográfica */
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-base: 16px;
+  --fs-md: 18px;
+  --fs-lg: 24px;
+  --fs-xl: 32px;
+  --fs-2xl: 48px;
+  --fs-3xl: 64px;
+  --fs-4xl: 80px;
+  --fs-hero: 96px;
+
+  /* Grid e Espaçamento */
+  --grid-max: 1280px;
+  --grid-gutter: 24px;
+  --section-py-desktop: 120px;
+  --section-py-mobile: 64px;
+
+  /* Border-radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+}
+
+body {
+  font-family: var(--font-corpo);
+  color: var(--color-t-primary);
+  background-color: var(--color-branco);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-titulo);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.bg-g-marca {
+  background-image: var(--g-marca);
+}
+
+.text-g-marca {
+  background-image: var(--g-marca);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Utilitários de espaçamento */
+.section-py {
+  padding-top: var(--section-py-mobile);
+  padding-bottom: var(--section-py-mobile);
+}
+
+@media (min-width: 1024px) {
+  .section-py {
+    padding-top: var(--section-py-desktop);
+    padding-bottom: var(--section-py-desktop);
+  }
+}
+
+.container-custom {
+  max-width: var(--grid-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--grid-gutter);
+  padding-right: var(--grid-gutter);
+}

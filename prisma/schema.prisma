@@ -1,0 +1,264 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  password      String
+  role          String   @default("EDITOR") // SUPER_ADMIN, ADMIN, EDITOR, VIEWER
+  avatar        String?
+  active        Boolean  @default(true)
+  twoFASecret         String?
+  twoFAEnabled        Boolean  @default(false)
+  recoveryToken       String?  @unique
+  recoveryExpiresAt   DateTime?
+  failedLoginAttempts Int      @default(0)
+  lastFailedLoginAt   DateTime?
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt     DateTime @default(now())
+  posts         Post[]
+  auditLogs     AuditLog[]
+}
+
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String?
+  userAgent String?
+  success   Boolean
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  whatsapp        String
+  company         String?
+  service         String
+  message         String
+  preferredContact String
+  source          String?
+  status          String   @default("NEW") // NEW, CONTACTED, QUOTED, CLOSED, LOST
+  assignedTo      String?
+  notes           Note[]
+  interactions    Interaction[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  text      String
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Interaction {
+  id        String   @id @default(cuid())
+  type      String
+  details   String
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  content     String   // JSON string
+  category    String   // GRAFICA, DESIGN, DIGITAL, MULTIPLE
+  tags        String   // JSON string array
+  images      String   // JSON string array
+  featured    Boolean  @default(false)
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, ARCHIVED
+  publishedAt DateTime?
+  seoTitle    String?
+  seoDesc     String?
+  ogImage     String?
+  views       Int      @default(0)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String   // JSON string
+  coverImage  String?
+  category    String
+  tags        String   // JSON string array
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, ARCHIVED
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  readTime    Int
+  seoTitle    String?
+  seoDesc     String?
+  ogImage     String?
+  focusKw     String?
+  views       Int      @default(0)
+  versions    String   @default("[]") // JSON string array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+}
+
+model Testimonial {
+  id        String  @id @default(cuid())
+  name      String
+  role      String?
+  company   String?
+  avatar    String?
+  service   String
+  rating    Int
+  text      String
+  active    Boolean @default(true)
+  order     Int     @default(0)
+  projectId String?
+  createdAt DateTime @default(now())
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  type      String
+  size      Int
+  width     Int?
+  height    Int?
+  alt       String?
+  caption   String?
+  uploadedBy String
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  data      String   // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteConfig {
+  id        String @id @default("singleton")
+  data      String // JSON string
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  resource  String
+  resourceId String?
+  before    String?  // JSON string
+  after     String?  // JSON string
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // INFO, SUCCESS, WARNING, ERROR
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  document  String?  // CPF/CNPJ
+  address   String?
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quotes    Quote[]
+}
+
+model Quote {
+  id          String   @id @default(cuid())
+  number      String   @unique // e.g., ORC-2025-001
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [id])
+  clientName  String   // Fallback if no client linked
+  clientEmail String?
+  clientPhone String?
+  service     String
+  description String
+  value       Float?
+  status      String   @default("PENDING") // PENDING, SENT, APPROVED, REJECTED, EXPIRED
+  validUntil  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  category    String
+  price       String?
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String?  // JSON string
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED
+  seoTitle    String?
+  seoDesc     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Menu {
+  id          String   @id @default(cuid())
+  name        String
+  location    String   @unique // e.g., HEADER, FOOTER, SIDEBAR
+  items       String   // JSON string array of menu items { label, url, order }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
