@@ -108,7 +108,7 @@ export default async function RootLayout({
           />
         )}
         {integrations.headScripts && (
-          <div dangerouslySetInnerHTML={{ __html: integrations.headScripts }} />
+          <div dangerouslySetInnerHTML={{ __html: integrations.headScripts as string }} />
         )}
       </head>
       <body className="antialiased min-h-screen flex flex-col" suppressHydrationWarning>

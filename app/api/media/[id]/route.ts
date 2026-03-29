@@ -9,10 +9,12 @@ type Params = {
 
 export async function DELETE(_: Request, { params }: Params) {
   const session = await auth();
-  if (!session?.user) {
+  const user = session?.user as any;
+
+  if (!user) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
-  if (!hasRequiredRole(session.user.role, 'EDITOR')) {
+  if (!hasRequiredRole(user.role, 'EDITOR')) {
     return NextResponse.json({ error: 'Sem permissão para excluir mídia' }, { status: 403 });
   }
 

@@ -16,10 +16,12 @@ function getFileExtension(filename: string): string {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) {
+  const user = session?.user as any;
+
+  if (!user) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
-  if (!hasRequiredRole(session.user.role, 'EDITOR')) {
+  if (!hasRequiredRole(user.role, 'EDITOR')) {
     return NextResponse.json({ error: 'Sem permissão para upload' }, { status: 403 });
   }
 
@@ -40,9 +42,7 @@ export async function POST(request: Request) {
   const uploaded: Array<{ url: string; path: string; name: string; size: number; type: string }> = [];
 
   for (const entry of files) {
-    if (!(entry instanceof File)) {
-      continue;
-    }
+    if (!(entry instanceof File)) continue;
 
     if (!ALLOWED_TYPES.has(entry.type)) {
       return NextResponse.json({ error: `Tipo de arquivo não suportado: ${entry.type}` }, { status: 400 });
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         url: file.url,
         type: file.type,
         size: file.size,
-        uploadedBy: session.user.id || session.user.email || 'system',
+        uploadedBy: user.id || user.email || 'system',
       })),
     });
   }
