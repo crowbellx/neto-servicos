@@ -2,7 +2,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { BLOG_PUBLIC_CACHE_TAG } from '@/lib/cache/blog-public';
 
 function normalizeTagsInput(raw: string | null | undefined): string {
   if (!raw || !String(raw).trim()) return '[]';
@@ -148,6 +149,7 @@ export async function createPost(formData: FormData) {
     revalidatePath('/admin/blog');
     revalidatePath('/blog');
     revalidatePath(`/blog/${post.slug}`);
+    revalidateTag(BLOG_PUBLIC_CACHE_TAG);
     return { success: true, data: post };
   } catch (error) {
     console.error('Error creating post:', error);
@@ -203,6 +205,7 @@ export async function updatePost(id: string, formData: FormData) {
     revalidatePath('/blog');
     revalidatePath(`/blog/${post.slug}`);
     revalidatePath(`/blog/${existingPost.slug}`);
+    revalidateTag(BLOG_PUBLIC_CACHE_TAG);
 
     return { success: true, data: post };
   } catch (error) {
@@ -229,6 +232,7 @@ export async function deletePost(id: string) {
     if (existing?.slug) {
       revalidatePath(`/blog/${existing.slug}`);
     }
+    revalidateTag(BLOG_PUBLIC_CACHE_TAG);
     return { success: true };
   } catch (error) {
     console.error('Error deleting post:', error);

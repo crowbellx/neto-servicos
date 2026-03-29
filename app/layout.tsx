@@ -4,7 +4,7 @@ import './globals.css';
 import Script from 'next/script';
 
 import AppShell from '@/components/layout/AppShell';
-import { getSettings } from '@/app/actions/settings';
+import { getCachedPublicSettingsBundle } from '@/lib/cache/settings';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,22 +19,26 @@ const playfair = Playfair_Display({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { data: seoSettings } = await getSettings('seo');
-  const seo = seoSettings?.data ? JSON.parse(seoSettings.data) : {};
+  const { seo } = await getCachedPublicSettingsBundle();
 
   return {
-    title: seo.metaTitle || 'Neto Serviços e Soluções | Gráfica, Design e Desenvolvimento Digital',
-    description: seo.metaDescription || 'Do físico ao digital em um só lugar. Serviços de gráfica, design e desenvolvimento web integrados. Solicite orçamento grátis.',
-    keywords: seo.keywords || 'gráfica, design, desenvolvimento web, criação de sites, identidade visual, impressão',
+    title: (seo.metaTitle as string) || 'Neto Serviços e Soluções | Gráfica, Design e Desenvolvimento Digital',
+    description:
+      (seo.metaDescription as string) ||
+      'Do físico ao digital em um só lugar. Serviços de gráfica, design e desenvolvimento web integrados. Solicite orçamento grátis.',
+    keywords:
+      (seo.keywords as string) ||
+      'gráfica, design, desenvolvimento web, criação de sites, identidade visual, impressão',
     openGraph: {
-      title: seo.ogTitle || seo.metaTitle || 'Neto Serviços e Soluções',
-      description: seo.ogDescription || seo.metaDescription || 'Do físico ao digital em um só lugar.',
-      images: seo.ogImage ? [{ url: seo.ogImage }] : [],
+      title: (seo.ogTitle as string) || (seo.metaTitle as string) || 'Neto Serviços e Soluções',
+      description:
+        (seo.ogDescription as string) || (seo.metaDescription as string) || 'Do físico ao digital em um só lugar.',
+      images: seo.ogImage ? [{ url: seo.ogImage as string }] : [],
     },
     robots: {
       index: seo.allowIndexing !== false,
       follow: seo.allowIndexing !== false,
-    }
+    },
   };
 }
 
@@ -43,11 +47,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: integrationsSettings } = await getSettings('integrations');
-  const integrations = integrationsSettings?.data ? JSON.parse(integrationsSettings.data) : {};
-
-  const { data: generalSettings } = await getSettings('general');
-  const general = generalSettings?.data ? JSON.parse(generalSettings.data) : {};
+  const { integrations, general } = await getCachedPublicSettingsBundle();
 
   return (
     <html lang="pt-BR" className={`${inter.variable} ${playfair.variable} scroll-smooth`}>

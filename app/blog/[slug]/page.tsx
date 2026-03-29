@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { getPublishedPostBySlug } from '@/app/actions/blog';
+import { getCachedPublishedPostBySlug } from '@/lib/cache/blog-public';
 import PostViewTracker from '@/components/blog/PostViewTracker';
 import type { Metadata } from 'next';
 
@@ -9,8 +9,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const { success, data: post } = await getPublishedPostBySlug(slug);
-  if (!success || !post) {
+  const post = await getCachedPublishedPostBySlug(slug);
+  if (!post) {
     return { title: 'Artigo | Neto Serviços' };
   }
   return {
@@ -31,9 +31,9 @@ function parseTags(tagsJson: string): string[] {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const { success, data: post } = await getPublishedPostBySlug(slug);
+  const post = await getCachedPublishedPostBySlug(slug);
 
-  if (!success || !post) {
+  if (!post) {
     notFound();
   }
 

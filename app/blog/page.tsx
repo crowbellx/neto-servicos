@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { getPublishedPosts } from '@/app/actions/blog';
+import { getCachedPublishedPostsList } from '@/lib/cache/blog-public';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ function parseTags(tagsJson: string): string[] {
 }
 
 export default async function BlogIndexPage() {
-  const { data: posts } = await getPublishedPosts();
+  const posts = await getCachedPublishedPostsList();
 
   return (
     <div className="bg-branco min-h-screen">

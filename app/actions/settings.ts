@@ -1,7 +1,8 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { SETTINGS_CACHE_TAG } from '@/lib/cache/settings';
 
 export async function getSettings(key: string) {
   try {
@@ -30,6 +31,7 @@ export async function updateSettings(key: string, data: any) {
     revalidatePath('/admin/configuracoes/geral');
     revalidatePath('/admin/configuracoes/seo');
     revalidatePath('/admin/configuracoes/integracoes');
+    revalidateTag(SETTINGS_CACHE_TAG);
     return { success: true, data: setting };
   } catch (error) {
     console.error(`Error updating setting ${key}:`, error);
@@ -64,6 +66,7 @@ export async function updateSiteConfig(data: any) {
     revalidatePath('/admin/configuracoes/geral');
     revalidatePath('/admin/configuracoes/seo');
     revalidatePath('/admin/configuracoes/integracoes');
+    revalidateTag(SETTINGS_CACHE_TAG);
     return { success: true, data: config };
   } catch (error) {
     console.error('Error updating site config:', error);
