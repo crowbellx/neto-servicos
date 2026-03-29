@@ -48,14 +48,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const { integrations, general } = await getCachedPublicSettingsBundle();
+  const i = integrations as Record<string, string | undefined>;
 
   return (
     <html lang="pt-BR" className={`${inter.variable} ${playfair.variable} scroll-smooth`}>
       <head>
-        {integrations.gaId && (
+        {i.gaId && (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${integrations.gaId}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${i.gaId}`}
               strategy="afterInteractive"
             />
             <Script
@@ -66,13 +67,13 @@ export default async function RootLayout({
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
-                  gtag('config', '${integrations.gaId}');
+                  gtag('config', '${i.gaId}');
                 `,
               }}
             />
           </>
         )}
-        {integrations.gtmId && (
+        {i.gtmId && (
           <Script
             id="gtm-init"
             strategy="afterInteractive"
@@ -82,12 +83,12 @@ export default async function RootLayout({
                 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
                 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                })(window,document,'script','dataLayer','${integrations.gtmId}');
+                })(window,document,'script','dataLayer','${i.gtmId}');
               `,
             }}
           />
         )}
-        {integrations.fbPixelId && (
+        {i.fbPixelId && (
           <Script
             id="fb-pixel-init"
             strategy="afterInteractive"
@@ -101,14 +102,14 @@ export default async function RootLayout({
                 t.src=v;s=b.getElementsByTagName(e)[0];
                 s.parentNode.insertBefore(t,s)}(window, document,'script',
                 'https://connect.facebook.net/en_US/fbevents.js');
-                fbq('init', '${integrations.fbPixelId}');
+                fbq('init', '${i.fbPixelId}');
                 fbq('track', 'PageView');
               `,
             }}
           />
         )}
-        {integrations.headScripts && (
-          <div dangerouslySetInnerHTML={{ __html: integrations.headScripts as string }} />
+        {i.headScripts && (
+          <div dangerouslySetInnerHTML={{ __html: i.headScripts }} />
         )}
       </head>
       <body className="antialiased min-h-screen flex flex-col" suppressHydrationWarning>

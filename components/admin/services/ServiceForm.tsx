@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ArrowLeft, CheckCircle2, Save } from 'lucide-react';
@@ -45,9 +45,9 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
     },
   });
 
-  const { register, handleSubmit, formState: { errors } } = form;
+  const { register, handleSubmit } = form;
 
-  const onSubmit = async (data: ServiceFormValues) => {
+  const onSubmit: SubmitHandler<ServiceFormValues> = async (data) => {
     setIsSaving(true);
     try {
       const result = initialData?.id ? await updateService(initialData.id, data) : await createService(data);
@@ -73,7 +73,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
           <div><h1 className="text-2xl font-bold text-gray-900">{initialData ? 'Editar Serviço' : 'Novo Serviço'}</h1></div>
         </div>
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => { form.setValue('status', 'INACTIVE'); handleSubmit(onSubmit)(); }} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Save size={18} /> Inativo</button>
+          <button type="button" onClick={() => { form.setValue('status', 'INACTIVE'); void handleSubmit(onSubmit)(); }} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Save size={18} /> Inativo</button>
           <button type="submit" disabled={isSaving} className="px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors disabled:opacity-70" onClick={() => form.setValue('status', 'ACTIVE')}><CheckCircle2 size={18} /> {isSaving ? 'Salvando...' : 'Salvar'}</button>
         </div>
       </div>
