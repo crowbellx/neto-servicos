@@ -1,8 +1,9 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Search, Filter, MoreHorizontal, Plus } from 'lucide-react';
+import { FileText, Search, Filter, Plus, Edit, Eye } from 'lucide-react';
 import { getPosts } from '@/app/actions/blog';
+import DeletePostButton from '@/components/admin/ui/DeletePostButton';
 
 export default async function BlogPage() {
   const session = await auth();
@@ -101,9 +102,27 @@ export default async function BlogPage() {
                     {new Date(post.createdAt).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors" title="Mais ações">
-                      <MoreHorizontal size={16} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/admin/blog/${post.id}/editar`}
+                        className="p-1.5 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded-md transition-colors"
+                        title="Editar"
+                      >
+                        <Edit size={16} />
+                      </Link>
+                      {post.status === 'PUBLISHED' && (
+                        <Link
+                          href={`/blog/${post.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          title="Ver no site"
+                        >
+                          <Eye size={16} />
+                        </Link>
+                      )}
+                      <DeletePostButton id={post.id} title={post.title} />
+                    </div>
                   </td>
                 </tr>
               ))}

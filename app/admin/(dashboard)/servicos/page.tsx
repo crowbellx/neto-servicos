@@ -1,8 +1,9 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Settings, Search, Filter, MoreHorizontal, Plus, Edit, Eye, Trash2 } from 'lucide-react';
+import { Settings, Search, Filter, Plus, Edit } from 'lucide-react';
 import { getServices } from '@/app/actions/services';
+import DeleteServiceButton from '@/components/admin/ui/DeleteServiceButton';
 
 export default async function ServicesPage() {
   const session = await auth();
@@ -100,9 +101,7 @@ export default async function ServicesPage() {
                       <Link href={`/admin/servicos/${service.id}`} className="p-1.5 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded-md transition-colors" title="Editar">
                         <Edit size={16} />
                       </Link>
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Excluir">
-                        <Trash2 size={16} />
-                      </button>
+                      <DeleteServiceButton id={service.id} title={service.title} />
                     </div>
                   </td>
                 </tr>

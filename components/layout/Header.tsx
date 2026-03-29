@@ -54,10 +54,17 @@ export default function Header({ general = {} }: HeaderProps) {
   const navLinks = [
     { name: 'Início', href: '/' },
     { name: 'Portfólio', href: '/portfolio' },
+    { name: 'Blog', href: '/blog' },
     { name: 'Sobre', href: '/sobre' },
   ];
 
   const companyName = general.companyName || 'Neto Serviços';
+
+  function isNavActive(href: string) {
+    if (href === '/blog') return pathname.startsWith('/blog');
+    if (href === '/portfolio') return pathname.startsWith('/portfolio');
+    return pathname === href;
+  }
 
   return (
     <header
@@ -143,7 +150,7 @@ export default function Header({ general = {} }: HeaderProps) {
               key={link.name}
               href={link.href}
               className={`text-sm font-medium transition-colors hover:text-laranja relative group ${
-                pathname === link.href ? 'text-laranja' : 'text-t-secondary'
+                isNavActive(link.href) ? 'text-laranja' : 'text-t-secondary'
               }`}
             >
               {link.name}

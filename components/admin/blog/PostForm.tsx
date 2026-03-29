@@ -31,6 +31,17 @@ interface PostFormProps {
   initialData?: any;
 }
 
+function tagsToFormValue(raw: string | undefined): string {
+  if (!raw) return '';
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.join(', ');
+  } catch {
+    /* texto livre */
+  }
+  return raw;
+}
+
 export default function PostForm({ initialData }: PostFormProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -42,7 +53,7 @@ export default function PostForm({ initialData }: PostFormProps) {
       excerpt: initialData?.excerpt || '',
       content: initialData?.content || '',
       category: initialData?.category || 'Geral',
-      tags: initialData?.tags || '',
+      tags: tagsToFormValue(initialData?.tags),
       status: initialData?.status || 'DRAFT',
       coverImage: initialData?.coverImage || '',
       seoTitle: initialData?.seoTitle || '',

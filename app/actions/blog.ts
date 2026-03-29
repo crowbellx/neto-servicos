@@ -4,6 +4,21 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 
+function normalizeTagsInput(raw: string | null | undefined): string {
+  if (!raw || !String(raw).trim()) return '[]';
+  const trimmed = String(raw).trim();
+  if (trimmed.startsWith('[')) {
+    try {
+      JSON.parse(trimmed);
+      return trimmed;
+    } catch {
+      return '[]';
+    }
+  }
+  const arr = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  return JSON.stringify(arr);
+}
+
 function generateSlug(title: string) {
   return title
     .toLowerCase()
@@ -28,17 +43,64 @@ export async function getPosts() {
 
 export async function getPostById(id: string) {
   try {
-    const post = await prisma.post.findUnique({
+    const post = await prisma.post.findFirst({
       where: { id, deletedAt: null },
-      include: { author: { select: { name: true, avatar: true } } }
+      include: { author: { select: { name: true, avatar: true } } },
     });
-    
+
     if (!post) return { success: false, error: 'Post not found' };
-    
+
     return { success: true, data: post };
   } catch (error) {
     console.error('Error fetching post:', error);
     return { success: false, error: 'Failed to fetch post' };
+  }
+}
+
+export async function getPublishedPosts() {
+  try {
+    const posts = await prisma.post.findMany({
+      where: {
+        deletedAt: null,
+        status: 'PUBLISHED',
+      },
+      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      include: { author: { select: { name: true, avatar: true } } },
+    });
+    return { success: true, data: posts };
+  } catch (error) {
+    console.error('Error fetching published posts:', error);
+    return { success: false, error: 'Failed to fetch posts' };
+  }
+}
+
+export async function getPublishedPostBySlug(slug: string) {
+  try {
+    const post = await prisma.post.findFirst({
+      where: {
+        slug,
+        deletedAt: null,
+        status: 'PUBLISHED',
+      },
+      include: { author: { select: { name: true, avatar: true } } },
+    });
+    if (!post) return { success: false, error: 'Post not found' };
+    return { success: true, data: post };
+  } catch (error) {
+    console.error('Error fetching post by slug:', error);
+    return { success: false, error: 'Failed to fetch post' };
+  }
+}
+
+export async function incrementPostViews(id: string) {
+  try {
+    await prisma.post.update({
+      where: { id },
+      data: { views: { increment: 1 } },
+    });
+    return { success: true };
+  } catch {
+    return { success: false };
   }
 }
 
@@ -53,7 +115,7 @@ export async function createPost(formData: FormData) {
     const excerpt = formData.get('excerpt') as string;
     const content = formData.get('content') as string;
     const category = formData.get('category') as string;
-    const tags = formData.get('tags') as string;
+    const tags = normalizeTagsInput(formData.get('tags') as string);
     const status = formData.get('status') as string || 'DRAFT';
     const coverImage = formData.get('coverImage') as string;
     
@@ -71,7 +133,7 @@ export async function createPost(formData: FormData) {
         excerpt,
         content,
         category,
-        tags: tags || '[]',
+        tags,
         status,
         coverImage,
         seoTitle,
@@ -85,6 +147,7 @@ export async function createPost(formData: FormData) {
 
     revalidatePath('/admin/blog');
     revalidatePath('/blog');
+    revalidatePath(`/blog/${post.slug}`);
     return { success: true, data: post };
   } catch (error) {
     console.error('Error creating post:', error);
@@ -103,7 +166,7 @@ export async function updatePost(id: string, formData: FormData) {
     const excerpt = formData.get('excerpt') as string;
     const content = formData.get('content') as string;
     const category = formData.get('category') as string;
-    const tags = formData.get('tags') as string;
+    const tags = normalizeTagsInput(formData.get('tags') as string);
     const status = formData.get('status') as string || 'DRAFT';
     const coverImage = formData.get('coverImage') as string;
     
@@ -124,7 +187,7 @@ export async function updatePost(id: string, formData: FormData) {
         excerpt,
         content,
         category,
-        tags: tags || '[]',
+        tags,
         status,
         coverImage,
         seoTitle,
@@ -138,7 +201,9 @@ export async function updatePost(id: string, formData: FormData) {
     revalidatePath('/admin/blog');
     revalidatePath(`/admin/blog/${id}/editar`);
     revalidatePath('/blog');
-    
+    revalidatePath(`/blog/${post.slug}`);
+    revalidatePath(`/blog/${existingPost.slug}`);
+
     return { success: true, data: post };
   } catch (error) {
     console.error('Error updating post:', error);
@@ -153,12 +218,17 @@ export async function deletePost(id: string) {
       return { success: false, error: 'Não autorizado' };
     }
 
+    const existing = await prisma.post.findUnique({ where: { id } });
     await prisma.post.update({
       where: { id },
-      data: { deletedAt: new Date(), status: 'ARCHIVED' }
+      data: { deletedAt: new Date(), status: 'ARCHIVED' },
     });
 
     revalidatePath('/admin/blog');
+    revalidatePath('/blog');
+    if (existing?.slug) {
+      revalidatePath(`/blog/${existing.slug}`);
+    }
     return { success: true };
   } catch (error) {
     console.error('Error deleting post:', error);

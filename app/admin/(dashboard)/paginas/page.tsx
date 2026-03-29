@@ -1,8 +1,9 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutTemplate, Search, Filter, MoreHorizontal, Edit, Eye, Plus } from 'lucide-react';
+import { LayoutTemplate, Search, Filter, Edit, Eye, Plus } from 'lucide-react';
 import { getPages } from '@/app/actions/pages';
+import DeletePageButton from '@/components/admin/ui/DeletePageButton';
 
 export default async function PagesPage() {
   const session = await auth();
@@ -88,12 +89,16 @@ export default async function PagesPage() {
                       <Link href={`/admin/paginas/${page.id}`} className="p-1.5 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded-md transition-colors" title="Editar">
                         <Edit size={16} />
                       </Link>
-                      <Link href={page.slug} target="_blank" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Ver no site">
+                      <Link
+                        href={page.slug.startsWith('/') ? page.slug : `/${page.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Ver no site"
+                      >
                         <Eye size={16} />
                       </Link>
-                      <button className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors" title="Mais opções">
-                        <MoreHorizontal size={16} />
-                      </button>
+                      <DeletePageButton id={page.id} title={page.title} />
                     </div>
                   </td>
                 </tr>

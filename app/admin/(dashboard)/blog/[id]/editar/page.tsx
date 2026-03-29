@@ -4,14 +4,17 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 
-export default async function EditPostPage({ params }: { params: { id: string } }) {
+type Props = { params: Promise<{ id: string }> };
+
+export default async function EditPostPage({ params }: Props) {
   const session = await auth();
 
   if (!session) {
     redirect('/admin/login');
   }
 
-  const { success, data: post } = await getPostById(params.id);
+  const { id } = await params;
+  const { success, data: post } = await getPostById(id);
 
   if (!success || !post) {
     notFound();
