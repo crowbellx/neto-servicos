@@ -13,6 +13,19 @@ function generateSlug(title: string) {
     .replace(/^-+|-+$/g, '') + '-' + Date.now().toString().slice(-4);
 }
 
+export async function getProjects() {
+  try {
+    const projects = await prisma.project.findMany({
+      orderBy: { createdAt: 'desc' },
+      where: { deletedAt: null },
+    });
+    return { success: true, data: projects };
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    return { success: false, error: 'Failed to fetch projects' };
+  }
+}
+
 export async function createProject(formData: FormData) {
   try {
     const session = await auth();
