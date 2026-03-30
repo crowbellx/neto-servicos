@@ -2,7 +2,8 @@ import type { NextAuthConfig } from 'next-auth';
 import { canAccessAdminPath } from '@/lib/auth/rbac';
  
 export const authConfig = {
-  secret: process.env.AUTH_SECRET || 'secret-for-development-only',
+  // Garantindo que o segredo exista, prioritariamente via ENV
+  secret: process.env.AUTH_SECRET,
   pages: {
     signIn: '/admin/login',
   },
@@ -12,6 +13,7 @@ export const authConfig = {
       const isOnAdmin = nextUrl.pathname.startsWith('/admin');
       
       if (isOnAdmin) {
+        // Rotas que não exigem login
         const isPublicAdminRoute = 
           nextUrl.pathname === '/admin/login' || 
           nextUrl.pathname === '/admin/recuperar-senha' ||
@@ -22,11 +24,18 @@ export const authConfig = {
           return true;
         }
         
+        // Se não está logado e tenta acessar admin, NextAuth redireciona para login
         if (!isLoggedIn) return false;
         
+        // Verificação de Role (RBAC)
         const userRole = (auth?.user as any)?.role || 'VIEWER';
+        
         if (!canAccessAdminPath(nextUrl.pathname, userRole)) {
-          return Response.redirect(new URL('/admin', nextUrl));
+          console.warn(`[AUTH] Acesso negado para rota ${nextUrl.pathname} (Role: ${userRole})`);
+          // Em vez de expulsar para o login, redireciona para o dashboard principal
+          if (nextUrl.pathname !== '/admin') {
+            return Response.redirect(new URL('/admin', nextUrl));
+          }
         }
 
         return true;
@@ -35,10 +44,14 @@ export const authConfig = {
       }
       return true;
     },
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = (user as any).role;
         token.id = user.id;
+      }
+      // Suporte para atualização de sessão manual
+      if (trigger === "update" && session) {
+        return { ...token, ...session.user };
       }
       return token;
     },
@@ -50,5 +63,5 @@ export const authConfig = {
       return session;
     },
   },
-  providers: [],
+  providers: [], // Configurado em auth.ts
 } satisfies NextAuthConfig;
