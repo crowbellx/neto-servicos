@@ -30,71 +30,63 @@ export default async function AdminDashboard() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
-  const [
-    leadsToday,
-    leadsYesterday,
-    totalLeads,
-    publishedProjects,
-    publishedPosts,
-    staleLeads,
-    recentLeadsRaw,
-    recentPostsRaw,
-    recentProjectsRaw,
-    last7DaysLeads,
-    last7DaysProjects,
-    last7DaysPosts,
-  ] = await Promise.all([
-    prisma.lead.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
-    prisma.lead.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
-    prisma.lead.count({ where: { deletedAt: null } }),
-    prisma.project.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
-    prisma.post.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
-    prisma.lead.count({
-      where: {
-        status: { in: ['NEW', 'CONTACTED'] },
-        createdAt: { lt: fortyEightHoursAgo },
-        deletedAt: null,
-      },
-    }),
-    prisma.lead.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: {
-        id: true,
-        name: true,
-        company: true,
-        service: true,
-        preferredContact: true,
-        status: true,
-        createdAt: true,
-      },
-    }),
-    prisma.post.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: { id: true, title: true, status: true, publishedAt: true, createdAt: true, views: true },
-    }),
-    prisma.project.findMany({
-      where: { deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      take: 3,
-      select: { id: true, title: true, category: true, publishedAt: true, createdAt: true },
-    }),
-    prisma.lead.findMany({
-      where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null },
-      select: { createdAt: true },
-    }),
-    prisma.project.findMany({
-      where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null, status: 'PUBLISHED' },
-      select: { createdAt: true },
-    }),
-    prisma.post.findMany({
-      where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null, status: 'PUBLISHED' },
-      select: { createdAt: true },
-    }),
+  // Reduzi a simultaneidade extrema para evitar fadiga do pooler de conexões
+  const [counts, recentData, trendData] = await Promise.all([
+    // Agrupando contagens simples
+    Promise.all([
+      prisma.lead.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
+      prisma.lead.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
+      prisma.lead.count({ where: { deletedAt: null } }),
+      prisma.project.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+      prisma.post.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+      prisma.lead.count({
+        where: {
+          status: { in: ['NEW', 'CONTACTED'] },
+          createdAt: { lt: fortyEightHoursAgo },
+          deletedAt: null,
+        },
+      }),
+    ]),
+    // Buscando listagens recentes
+    Promise.all([
+      prisma.lead.findMany({
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      prisma.post.findMany({
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id: true, title: true, status: true, publishedAt: true, createdAt: true, views: true },
+      }),
+      prisma.project.findMany({
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        select: { id: true, title: true, category: true, publishedAt: true, createdAt: true },
+      }),
+    ]),
+    // Dados do gráfico
+    Promise.all([
+      prisma.lead.findMany({
+        where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null },
+        select: { createdAt: true },
+      }),
+      prisma.project.findMany({
+        where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null, status: 'PUBLISHED' },
+        select: { createdAt: true },
+      }),
+      prisma.post.findMany({
+        where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null, status: 'PUBLISHED' },
+        select: { createdAt: true },
+      }),
+    ])
   ]);
+
+  const [leadsToday, leadsYesterday, totalLeads, publishedProjects, publishedPosts, staleLeads] = counts;
+  const [recentLeadsRaw, recentPostsRaw, recentProjectsRaw] = recentData;
+  const [last7DaysLeads, last7DaysProjects, last7DaysPosts] = trendData;
 
   const statusMap: Record<string, { label: string; color: string }> = {
     NEW: { label: 'Novo', color: 'bg-laranja animate-pulse' },
@@ -141,7 +133,6 @@ export default async function AdminDashboard() {
         <p className="text-sm text-gray-500">Bem-vindo, {session.user?.name}</p>
       </div>
 
-      {/* Alertas do Sistema */}
       {staleLeads > 0 && (
         <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-start gap-3">
           <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={20} />
@@ -152,50 +143,15 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard 
-          title="Leads hoje"
-          value={String(leadsToday)}
-          trend={leadTrendLabel}
-          trendUp={leadTrend >= 0}
-          icon={Mail}
-          color="bg-laranja"
-        />
-        <MetricCard 
-          title="Leads totais"
-          value={String(totalLeads)}
-          trend={`${leadsToday} hoje`}
-          trendUp={true}
-          icon={Users}
-          color="bg-blue-500" 
-        />
-        <MetricCard 
-          title="Projetos publicados" 
-          value={String(publishedProjects)} 
-          trend="conteúdo ativo" 
-          trendUp={true} 
-          icon={Briefcase} 
-          color="bg-purple-500" 
-        />
-        <MetricCard 
-          title="Posts publicados" 
-          value={String(publishedPosts)} 
-          trend="conteúdo ativo" 
-          trendUp={true} 
-          icon={FileText} 
-          color="bg-green-500" 
-        />
+        <MetricCard title="Leads hoje" value={String(leadsToday)} trend={leadTrendLabel} trendUp={leadTrend >= 0} icon={Mail} color="bg-laranja" />
+        <MetricCard title="Leads totais" value={String(totalLeads)} trend={`${leadsToday} hoje`} trendUp={true} icon={Users} color="bg-blue-500" />
+        <MetricCard title="Projetos publicados" value={String(publishedProjects)} trend="conteúdo ativo" trendUp={true} icon={Briefcase} color="bg-purple-500" />
+        <MetricCard title="Posts publicados" value={String(publishedPosts)} trend="conteúdo ativo" trendUp={true} icon={FileText} color="bg-green-500" />
       </div>
 
-      {/* Gráficos */}
-      <DashboardCharts
-        data={chartData}
-        totalLeads={last7DaysLeads.length}
-        totalPublicados={last7DaysProjects.length + last7DaysPosts.length}
-      />
+      <DashboardCharts data={chartData} totalLeads={last7DaysLeads.length} totalPublicados={last7DaysProjects.length + last7DaysPosts.length} />
 
-      {/* Tabelas de Resumo */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <RecentLeads
@@ -216,14 +172,7 @@ export default async function AdminDashboard() {
             posts={recentPostsRaw.map((post) => ({
               id: post.id,
               title: post.title,
-              status:
-                post.status === 'PUBLISHED'
-                  ? 'Publicado'
-                  : post.status === 'SCHEDULED'
-                    ? 'Agendado'
-                    : post.status === 'ARCHIVED'
-                      ? 'Arquivado'
-                      : 'Rascunho',
+              status: post.status === 'PUBLISHED' ? 'Publicado' : post.status === 'SCHEDULED' ? 'Agendado' : post.status === 'ARCHIVED' ? 'Arquivado' : 'Rascunho',
               date: (post.publishedAt || post.createdAt).toLocaleDateString('pt-BR'),
               views: post.views,
             }))}
@@ -242,21 +191,7 @@ export default async function AdminDashboard() {
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  trend,
-  trendUp,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  trend: string;
-  trendUp: boolean;
-  icon: React.ComponentType<{ size?: number }>;
-  color: string;
-}) {
+function MetricCard({ title, value, trend, trendUp, icon: Icon, color }: { title: string; value: string; trend: string; trendUp: boolean; icon: any; color: string }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-md transition-shadow cursor-pointer">
       <div className="flex items-center justify-between mb-4">
