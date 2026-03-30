@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { createUser, updateUser } from '@/app/actions/users';
-import { ArrowLeft, Save, Shield, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 
 const userSchema = z.object({
@@ -15,7 +15,7 @@ const userSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres').optional().or(z.literal('')),
   role: z.enum(['VIEWER', 'EDITOR', 'ADMIN', 'SUPER_ADMIN']),
-  active: z.boolean().default(true),
+  active: z.boolean(),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
