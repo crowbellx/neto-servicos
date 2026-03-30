@@ -23,7 +23,13 @@ export async function authenticate(
 
     await signIn('credentials', formData);
   } catch (error) {
-    // Log detalhado para o painel do Vercel (Runtime Logs)
+    // Se for um redirecionamento do Next.js (comum no signIn com sucesso), 
+    // precisamos relançar o erro sem logar como falha no console.
+    if ((error as any).digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
+    // Log detalhado apenas para erros reais
     console.error('[AUTH_ACTION_ERROR]:', error);
 
     if (error instanceof Error) {
@@ -44,9 +50,6 @@ export async function authenticate(
           : lockUntil.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         return `Conta bloqueada. Tente novamente às ${lockTime}.`;
       }
-      if (message === 'RATE_LIMIT_IP') {
-        return 'Muitas tentativas neste IP. Tente novamente em alguns minutos.';
-      }
     }
 
     if (error instanceof AuthError) {
@@ -54,15 +57,10 @@ export async function authenticate(
         case 'CredentialsSignin':
           return 'E-mail ou senha incorretos.';
         case 'CallbackRouteError':
-          return 'Erro de comunicação com o banco de dados. Verifique o DATABASE_URL.';
+          return 'Erro de comunicação com o banco de dados.';
         default:
           return 'Ocorreu um erro inesperado na autenticação.';
       }
-    }
-    
-    // Se for um redirecionamento do Next.js (comum no signIn), precisamos relançar
-    if ((error as any).digest?.startsWith('NEXT_REDIRECT')) {
-      throw error;
     }
 
     return 'Erro ao conectar ao servidor de autenticação.';

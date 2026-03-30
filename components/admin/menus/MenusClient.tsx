@@ -29,17 +29,27 @@ export default function MenusClient({ initialMenus }: { initialMenus: any[] }) {
   const handleSaveItems = async () => {
     if (!selectedMenu) return;
     setIsSaving(true);
-    const res = await updateMenu(selectedMenu.id, { items: selectedMenu.items });
+    const res = await updateMenu(selectedMenu.id, { 
+      name: selectedMenu.name,
+      location: selectedMenu.location,
+      items: selectedMenu.items 
+    });
     setIsSaving(false);
-    if (res.success) toast.success('Menu salvo!');
+    if (res.success) {
+      toast.success('Menu salvo!');
+      setMenus(menus.map(m => m.id === selectedMenu.id ? selectedMenu : m));
+    } else {
+      toast.error('Erro ao salvar menu');
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este menu?')) return;
     const res = await deleteMenu(id);
     if (res.success) {
-      setMenus(menus.filter(m => m.id !== id));
-      setSelectedMenu(menus[0] || null);
+      const updated = menus.filter(m => m.id !== id);
+      setMenus(updated);
+      setSelectedMenu(updated[0] || null);
       toast.success('Menu excluído');
     }
   };
@@ -47,27 +57,34 @@ export default function MenusClient({ initialMenus }: { initialMenus: any[] }) {
   const addItem = (label: string, url: string) => {
     if (!selectedMenu) return;
     const items = JSON.parse(selectedMenu.items || '[]');
-    items.push({ label, url });
+    const newItems = [...items, { label, url }];
+    setSelectedMenu({ ...selectedMenu, items: JSON.stringify(newItems) });
+  };
+
+  const removeItem = (idx: number) => {
+    if (!selectedMenu) return;
+    const items = JSON.parse(selectedMenu.items || '[]');
+    items.splice(idx, 1);
     setSelectedMenu({ ...selectedMenu, items: JSON.stringify(items) });
   };
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex gap-6 h-[calc(100vh-180px)]">
       {/* Lista de Menus */}
-      <div className="w-80 flex flex-col gap-4">
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Menus</h2>
+      <div className="w-80 flex flex-col gap-4 overflow-hidden">
+        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between shrink-0">
+          <h2 className="font-bold text-gray-900">Menus do Site</h2>
           <button onClick={() => setIsCreating(true)} className="p-1.5 bg-laranja/10 text-laranja rounded-md hover:bg-laranja/20">
             <Plus size={18} />
           </button>
         </div>
 
-        <div className="space-y-2 overflow-y-auto">
+        <div className="space-y-2 overflow-y-auto pr-1 scrollbar-thin">
           {menus.map((menu) => (
             <div 
               key={menu.id} 
               onClick={() => setSelectedMenu(menu)}
-              className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedMenu?.id === menu.id ? 'bg-orange-50 border-laranja/30' : 'bg-white border-gray-100 hover:border-gray-200'}`}
+              className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedMenu?.id === menu.id ? 'bg-orange-50 border-laranja/30 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200'}`}
             >
               <div className="flex justify-between items-start">
                 <h3 className={`font-bold text-sm ${selectedMenu?.id === menu.id ? 'text-laranja' : 'text-gray-900'}`}>{menu.name}</h3>
@@ -75,33 +92,39 @@ export default function MenusClient({ initialMenus }: { initialMenus: any[] }) {
                   <Trash2 size={14} />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">{menu.location}</p>
+              <p className="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-wider">{menu.location}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Editor de Itens */}
-      <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col">
+      <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col overflow-hidden">
         {selectedMenu ? (
           <>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-8 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Editando: {selectedMenu.name}</h2>
-                <p className="text-sm text-gray-500">Gerencie os links deste menu</p>
+                <p className="text-sm text-gray-500">Localização: {selectedMenu.location}</p>
               </div>
-              <button onClick={handleSaveItems} disabled={isSaving} className="bg-laranja text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Menu'}
+              <button onClick={handleSaveItems} disabled={isSaving} className="bg-laranja text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-[#D4651A] transition-colors disabled:opacity-50">
+                <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 overflow-hidden">
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <h3 className="font-bold text-sm text-gray-900 mb-4">Adicionar Link</h3>
+                  <h3 className="font-bold text-sm text-gray-900 mb-4">Adicionar Novo Link</h3>
                   <div className="space-y-3">
-                    <input id="new-label" placeholder="Texto do Link" className="w-full p-2 text-sm border border-gray-200 rounded-lg outline-none" />
-                    <input id="new-url" placeholder="URL (ex: /sobre)" className="w-full p-2 text-sm border border-gray-200 rounded-lg outline-none" />
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Rótulo (Texto)</label>
+                      <input id="new-label" placeholder="Ex: Sobre Nós" className="w-full p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-laranja" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">URL (Link)</label>
+                      <input id="new-url" placeholder="Ex: /sobre" className="w-full p-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-laranja font-mono" />
+                    </div>
                     <button 
                       onClick={() => {
                         const l = document.getElementById('new-label') as HTMLInputElement;
@@ -109,9 +132,11 @@ export default function MenusClient({ initialMenus }: { initialMenus: any[] }) {
                         if (l.value && u.value) {
                           addItem(l.value, u.value);
                           l.value = ''; u.value = '';
+                        } else {
+                          toast.error('Preencha o nome e a URL');
                         }
                       }}
-                      className="w-full py-2 bg-gray-900 text-white rounded-lg text-sm font-bold"
+                      className="w-full py-2.5 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-black transition-colors"
                     >
                       Adicionar ao Menu
                     </button>
@@ -119,58 +144,64 @@ export default function MenusClient({ initialMenus }: { initialMenus: any[] }) {
                 </div>
               </div>
 
-              <div className="lg:col-span-2 space-y-2 overflow-y-auto pr-2">
-                {JSON.parse(selectedMenu.items || '[]').map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl group hover:border-laranja/30">
-                    <GripVertical size={18} className="text-gray-300 cursor-move" />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-gray-900">{item.label}</p>
-                      <p className="text-xs text-gray-500">{item.url}</p>
+              <div className="lg:col-span-2 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-thin">
+                  {JSON.parse(selectedMenu.items || '[]').length === 0 && (
+                    <div className="h-40 border-2 border-dashed border-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-400">
+                      <p>Nenhum link adicionado</p>
                     </div>
-                    <button 
-                      onClick={() => {
-                        const items = JSON.parse(selectedMenu.items);
-                        items.splice(idx, 1);
-                        setSelectedMenu({ ...selectedMenu, items: JSON.stringify(items) });
-                      }}
-                      className="p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+                  )}
+                  {JSON.parse(selectedMenu.items || '[]').map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl group hover:border-laranja/30 hover:shadow-sm transition-all">
+                      <div className="p-1 bg-gray-50 rounded text-gray-300">
+                        <GripVertical size={18} className="cursor-move" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-gray-900">{item.label}</p>
+                        <p className="text-xs text-gray-500 font-mono">{item.url}</p>
+                      </div>
+                      <button 
+                        onClick={() => removeItem(idx)}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400">
-            <Plus size={48} className="mb-4 opacity-20" />
-            <p>Selecione ou crie um menu para começar</p>
+            <Plus size={48} className="mb-4 opacity-10" />
+            <p>Selecione um menu lateral ou crie um novo</p>
           </div>
         )}
       </div>
 
       {/* Modal Novo Menu */}
       {isCreating && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-bold text-lg">Novo Menu</h3>
-              <button type="button" onClick={() => setIsCreating(false)}><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-bold text-lg">Criar Novo Menu</h3>
+              <button type="button" onClick={() => setIsCreating(false)} className="text-gray-400 hover:text-gray-900"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-1">Nome do Menu</label>
-                <input name="name" required placeholder="Ex: Menu Principal" className="w-full border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-laranja" />
+                <label className="block text-sm font-bold text-gray-700 mb-1">Nome de Identificação</label>
+                <input name="name" required placeholder="Ex: Menu Principal Superior" className="w-full border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-laranja" />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">Localização (Slug)</label>
-                <input name="location" required placeholder="Ex: header-main" className="w-full border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-laranja font-mono" />
+                <label className="block text-sm font-bold text-gray-700 mb-1">Localização (Slug único)</label>
+                <input name="location" required placeholder="Ex: main-nav" className="w-full border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-laranja font-mono" />
+                <p className="text-[10px] text-gray-400 mt-1">Este slug será usado para chamar o menu no código.</p>
               </div>
             </div>
             <div className="p-6 bg-gray-50 flex justify-end gap-3">
-              <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 text-sm font-bold text-gray-500">Cancelar</button>
-              <button type="submit" className="px-6 py-2 bg-laranja text-white rounded-lg font-bold text-sm">Criar Menu</button>
+              <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700">Cancelar</button>
+              <button type="submit" className="px-6 py-2 bg-laranja text-white rounded-lg font-bold text-sm shadow-md hover:bg-[#D4651A]">Criar Menu</button>
             </div>
           </form>
         </div>
