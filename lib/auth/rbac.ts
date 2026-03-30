@@ -19,12 +19,13 @@ const routePermissions: Array<{ prefix: string; minRole: Role }> = [
   { prefix: '/admin/analytics', minRole: 'VIEWER' },
   { prefix: '/admin/blog', minRole: 'EDITOR' },
   { prefix: '/admin/portfolio', minRole: 'EDITOR' },
-  { prefix: '/admin/paginas', minRole: 'EDITOR' }, // Adicionado permissão mínima de Editor
+  { prefix: '/admin/paginas', minRole: 'VIEWER' }, // Permitir que todos vejam a lista
 ];
 
 export function normalizeRole(role?: string | null): Role {
   if (!role) return 'VIEWER';
-  return (ROLES as readonly string[]).includes(role) ? (role as Role) : 'VIEWER';
+  const r = String(role).toUpperCase();
+  return (ROLES as readonly string[]).includes(r) ? (r as Role) : 'VIEWER';
 }
 
 export function hasRequiredRole(userRole: string | null | undefined, minRole: Role) {

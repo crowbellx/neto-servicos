@@ -1,7 +1,6 @@
 import type { NextAuthConfig } from 'next-auth';
 import { canAccessAdminPath } from '@/lib/auth/rbac';
  
-// Definimos um segredo estável para evitar falhas de descriptografia de cookie
 const AUTH_SECRET = process.env.AUTH_SECRET || 'neto-servicos-estrat-123456789';
 
 export const authConfig = {
@@ -9,7 +8,7 @@ export const authConfig = {
   trustHost: true,
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    maxAge: 30 * 24 * 60 * 60,
   },
   pages: {
     signIn: '/admin/login',
@@ -30,12 +29,12 @@ export const authConfig = {
           return true;
         }
         
-        // Se não houver sessão, redireciona para login
         if (!isLoggedIn) return false;
         
         // Verificação de permissões
-        const userRole = (auth?.user as any)?.role || 'VIEWER';
+        const userRole = (auth?.user as any)?.role;
         if (!canAccessAdminPath(nextUrl.pathname, userRole)) {
+          // Se não tem permissão para a sub-rota, manda para a home do admin em vez do login
           if (nextUrl.pathname !== '/admin') {
             return Response.redirect(new URL('/admin', nextUrl));
           }

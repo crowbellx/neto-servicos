@@ -41,35 +41,35 @@ const navItems: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Conteúdo',
     items: [
-      { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase },
-      { name: 'Blog', href: '/admin/blog', icon: FileText },
-      { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare },
-      { name: 'Equipe', href: '/admin/equipe', icon: Users },
+      { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase, minRole: 'EDITOR' },
+      { name: 'Blog', href: '/admin/blog', icon: FileText, minRole: 'EDITOR' },
+      { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare, minRole: 'EDITOR' },
+      { name: 'Equipe', href: '/admin/equipe', icon: Users, minRole: 'ADMIN' },
     ]
   },
   {
     title: 'Gestão',
     items: [
       { name: 'Leads & Mensagens', href: '/admin/leads', icon: Mail, badgeKey: 'leads' },
-      { name: 'Orçamentos', href: '/admin/orcamentos', icon: FileSignature },
-      { name: 'Clientes', href: '/admin/clientes', icon: UserSquare2 },
+      { name: 'Orçamentos', href: '/admin/orcamentos', icon: FileSignature, minRole: 'EDITOR' },
+      { name: 'Clientes', href: '/admin/clientes', icon: UserSquare2, minRole: 'EDITOR' },
     ]
   },
   {
     title: 'Site',
     items: [
-      { name: 'Páginas', href: '/admin/paginas', icon: Files },
-      { name: 'Serviços', href: '/admin/servicos', icon: Settings },
-      { name: 'Mídia', href: '/admin/midia', icon: ImageIcon },
-      { name: 'Menus', href: '/admin/menus', icon: MenuSquare },
+      { name: 'Páginas', href: '/admin/paginas', icon: Files, minRole: 'VIEWER' },
+      { name: 'Serviços', href: '/admin/servicos', icon: Settings, minRole: 'VIEWER' },
+      { name: 'Mídia', href: '/admin/midia', icon: ImageIcon, minRole: 'EDITOR' },
+      { name: 'Menus', href: '/admin/menus', icon: MenuSquare, minRole: 'ADMIN' },
     ]
   },
   {
     title: 'Configurações',
     items: [
-      { name: 'Geral', href: '/admin/configuracoes/geral', icon: Settings },
-      { name: 'SEO', href: '/admin/configuracoes/seo', icon: Settings },
-      { name: 'Integrações', href: '/admin/configuracoes/integracoes', icon: Settings },
+      { name: 'Geral', href: '/admin/configuracoes/geral', icon: Settings, minRole: 'ADMIN' },
+      { name: 'SEO', href: '/admin/configuracoes/seo', icon: Settings, minRole: 'ADMIN' },
+      { name: 'Integrações', href: '/admin/configuracoes/integracoes', icon: Settings, minRole: 'ADMIN' },
       { name: 'E-mail', href: '/admin/configuracoes/email', icon: Mail, minRole: 'ADMIN' },
       { name: 'Usuários', href: '/admin/configuracoes/usuarios', icon: Users, minRole: 'ADMIN' },
       { name: 'Logs & Auditoria', href: '/admin/configuracoes/logs', icon: FileText, minRole: 'ADMIN' },
