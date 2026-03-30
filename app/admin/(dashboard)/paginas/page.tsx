@@ -1,20 +1,12 @@
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutTemplate, Search, Filter, Edit, Eye, Plus, Settings } from 'lucide-react';
+import { LayoutTemplate, Edit, Eye, Plus, Settings } from 'lucide-react';
 import { getPages } from '@/app/actions/pages';
 import DeletePageButton from '@/components/admin/ui/DeletePageButton';
 
 export default async function PagesPage() {
-  const session = await auth();
-
-  if (!session) {
-    redirect('/admin/login');
-  }
-
+  // A segurança já é tratada pelo layout.tsx e middleware.ts
   const { data: dbPages } = await getPages();
   
-  // Definimos as páginas "core" do site para que o usuário saiba que pode gerenciá-las
   const corePages = [
     { title: 'Início (Home)', slug: '/' },
     { title: 'Sobre Nós', slug: 'sobre' },
@@ -52,7 +44,6 @@ export default async function PagesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {/* Primeiro listamos as páginas que já estão no banco */}
               {dbPages?.map((page) => (
                 <tr key={page.id} className="bg-white hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
@@ -83,7 +74,6 @@ export default async function PagesPage() {
                 </tr>
               ))}
 
-              {/* Seção Informativa de Páginas do Sistema não cadastradas */}
               <tr className="bg-gray-50/50">
                 <td colSpan={4} className="px-6 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   Sugestões de páginas do sistema para configurar

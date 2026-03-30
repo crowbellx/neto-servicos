@@ -19,6 +19,7 @@ const routePermissions: Array<{ prefix: string; minRole: Role }> = [
   { prefix: '/admin/analytics', minRole: 'VIEWER' },
   { prefix: '/admin/blog', minRole: 'EDITOR' },
   { prefix: '/admin/portfolio', minRole: 'EDITOR' },
+  { prefix: '/admin/paginas', minRole: 'EDITOR' }, // Adicionado permissão mínima de Editor
 ];
 
 export function normalizeRole(role?: string | null): Role {
