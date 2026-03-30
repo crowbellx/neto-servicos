@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,6 +28,7 @@ interface PageFormProps {
 
 export default function PageForm({ initialData }: PageFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<PageFormValues>({
@@ -46,9 +47,23 @@ export default function PageForm({ initialData }: PageFormProps) {
     register,
     control,
     handleSubmit,
+    setValue,
     watch,
     formState: { errors },
   } = form;
+
+  // Se for uma página nova e tiver params na URL (ex: configurar página core)
+  useEffect(() => {
+    if (!initialData) {
+      const qSlug = searchParams.get('slug');
+      const qTitle = searchParams.get('title');
+      if (qSlug) setValue('slug', qSlug);
+      if (qTitle) {
+        setValue('title', qTitle);
+        setValue('seoTitle', qTitle);
+      }
+    }
+  }, [initialData, searchParams, setValue]);
 
   const onSubmit = async (data: PageFormValues) => {
     setIsSaving(true);
@@ -61,7 +76,7 @@ export default function PageForm({ initialData }: PageFormProps) {
         return;
       }
 
-      toast.success(initialData?.id ? 'Página atualizada com sucesso.' : 'Página criada com sucesso.');
+      toast.success(initialData?.id ? 'Página atualizada!' : 'Página criada e configurada!');
       router.push('/admin/paginas');
       router.refresh();
     } catch (error) {
@@ -79,8 +94,8 @@ export default function PageForm({ initialData }: PageFormProps) {
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{initialData ? 'Editar Página' : 'Nova Página'}</h1>
-            <p className="text-sm text-gray-500">{initialData ? 'Atualize o conteúdo da página' : 'Cadastre uma nova página estática'}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{initialData ? 'Editar Página' : 'Configurar Página'}</h1>
+            <p className="text-sm text-gray-500">{initialData ? 'Atualize o conteúdo da página' : 'Defina o conteúdo inicial e SEO da página'}</p>
           </div>
         </div>
 
@@ -98,24 +113,24 @@ export default function PageForm({ initialData }: PageFormProps) {
         <div className="xl:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-              <input {...register('title')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-laranja/20 focus:border-laranja" />
+              <label className="block text-sm font-bold text-gray-700 mb-1">Título Interno</label>
+              <input {...register('title')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-laranja focus:border-laranja outline-none" />
               {errors.title && <span className="text-red-500 text-xs">{errors.title.message}</span>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
-              <input {...register('slug')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-mono focus:ring-2 focus:ring-laranja/20 focus:border-laranja" />
+              <label className="block text-sm font-bold text-gray-700 mb-1">URL amigável (Slug)</label>
+              <input {...register('slug')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-mono focus:ring-laranja focus:border-laranja outline-none" />
               {errors.slug && <span className="text-red-500 text-xs">{errors.slug.message}</span>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Conteúdo</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Conteúdo da Página</label>
               <Controller
                 name="content"
                 control={control}
                 render={({ field }) => (
-                  <TipTapEditor value={field.value || ''} onChange={field.onChange} placeholder="<p>Escreva o conteúdo da página...</p>" />
+                  <TipTapEditor value={field.value || ''} onChange={field.onChange} placeholder="<p>Escreva o conteúdo da página aqui...</p>" />
                 )}
               />
             </div>
@@ -123,25 +138,25 @@ export default function PageForm({ initialData }: PageFormProps) {
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-fit">
-          <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Configurações</h3>
+          <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Configurações e SEO</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select {...register('status')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-laranja/20 focus:border-laranja">
+              <label className="block text-sm font-bold text-gray-700 mb-1">Status</label>
+              <select {...register('status')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-laranja focus:border-laranja outline-none">
                 <option value="DRAFT">Rascunho</option>
-                <option value="PUBLISHED">Publicado</option>
+                <option value="PUBLISHED">Publicado (Visível no site)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SEO Title</label>
-              <input {...register('seoTitle')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-laranja/20 focus:border-laranja" />
+              <label className="block text-sm font-bold text-gray-700 mb-1">Título SEO (Google)</label>
+              <input {...register('seoTitle')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-laranja" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SEO Description</label>
-              <textarea {...register('seoDesc')} rows={4} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-laranja/20 focus:border-laranja" />
-              <p className="text-xs text-gray-400 mt-1">{watch('seoDesc')?.length || 0} caracteres</p>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Meta Descrição</label>
+              <textarea {...register('seoDesc')} rows={4} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-laranja resize-none" />
+              <p className="text-[10px] text-gray-400 mt-1 text-right">{watch('seoDesc')?.length || 0} caracteres</p>
             </div>
           </div>
         </div>

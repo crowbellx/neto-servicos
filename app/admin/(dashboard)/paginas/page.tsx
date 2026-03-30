@@ -3,8 +3,10 @@ import { LayoutTemplate, Edit, Eye, Plus, Settings } from 'lucide-react';
 import { getPages } from '@/app/actions/pages';
 import DeletePageButton from '@/components/admin/ui/DeletePageButton';
 
+// Força o Next.js a não usar cache para esta rota de admin, resolvendo o loop de login
+export const dynamic = 'force-dynamic';
+
 export default async function PagesPage() {
-  // A segurança já é tratada pelo layout.tsx e middleware.ts
   const { data: dbPages } = await getPages();
   
   const corePages = [
@@ -28,7 +30,7 @@ export default async function PagesPage() {
           href="/admin/paginas/nova"
           className="bg-laranja text-white px-4 py-2 rounded-lg font-medium hover:bg-[#D4651A] transition-colors flex items-center gap-2"
         >
-          <Plus size={18} /> Criar Nova Página
+          <Plus size={18} /> Criar Página Livre
         </Link>
       </div>
 
@@ -44,43 +46,47 @@ export default async function PagesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {dbPages?.map((page) => (
-                <tr key={page.id} className="bg-white hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded bg-laranja/10 flex items-center justify-center text-laranja">
-                        <LayoutTemplate size={16} />
+              {/* Páginas que já existem no Banco de Dados */}
+              {dbPages && dbPages.length > 0 ? (
+                dbPages.map((page) => (
+                  <tr key={page.id} className="bg-white hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-laranja/10 flex items-center justify-center text-laranja">
+                          <LayoutTemplate size={16} />
+                        </div>
+                        <span className="font-bold text-gray-900">{page.title}</span>
                       </div>
-                      <span className="font-bold text-gray-900">{page.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-mono text-xs text-gray-500">/{page.slug}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${page.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {page.status === 'PUBLISHED' ? 'ATIVO' : 'RASCUNHO'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link href={`/admin/paginas/${page.id}`} className="p-2 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded-lg transition-colors">
-                        <Edit size={16} />
-                      </Link>
-                      <Link href={`/${page.slug}`} target="_blank" className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                        <Eye size={16} />
-                      </Link>
-                      <DeletePageButton id={page.id} title={page.title} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-500">/{page.slug}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${page.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {page.status === 'PUBLISHED' ? 'ATIVO' : 'RASCUNHO'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/admin/paginas/${page.id}`} className="p-2 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded-lg transition-colors">
+                          <Edit size={16} />
+                        </Link>
+                        <Link href={`/${page.slug}`} target="_blank" className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <Eye size={16} />
+                        </Link>
+                        <DeletePageButton id={page.id} title={page.title} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : null}
 
+              {/* Sugestões de Páginas Core (Caso ainda não tenham sido criadas) */}
               <tr className="bg-gray-50/50">
                 <td colSpan={4} className="px-6 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Sugestões de páginas do sistema para configurar
+                  Estrutura do Site (Pendentes de configuração)
                 </td>
               </tr>
               {corePages.filter(cp => !dbPages?.some(p => p.slug === cp.slug)).map((cp, idx) => (
-                <tr key={idx} className="bg-white opacity-60 hover:opacity-100 transition-opacity">
+                <tr key={`core-${idx}`} className="bg-white opacity-60 hover:opacity-100 transition-opacity">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400">
@@ -91,14 +97,14 @@ export default async function PagesPage() {
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-gray-400">/{cp.slug}</td>
                   <td className="px-6 py-4">
-                    <span className="text-[10px] font-bold text-gray-400">NÃO CONFIGURADO</span>
+                    <span className="text-[10px] font-bold text-gray-400">NÃO INICIALIZADA</span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Link 
-                      href={`/admin/paginas/nova?slug=${cp.slug}&title=${cp.title}`}
-                      className="text-xs font-bold text-laranja hover:underline"
+                      href={`/admin/paginas/nova?slug=${cp.slug}&title=${encodeURIComponent(cp.title)}`}
+                      className="text-xs font-bold text-laranja hover:underline bg-laranja/5 px-3 py-1.5 rounded-md"
                     >
-                      Configurar Página
+                      Configurar Agora
                     </Link>
                   </td>
                 </tr>
