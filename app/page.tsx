@@ -9,11 +9,10 @@ import CTASection from '@/components/home/CTASection';
 import ContatoSection from '@/components/contato/ContatoSection';
 import { prisma } from '@/lib/prisma';
 
-export const revalidate = 60; // Revalida a cada minuto
+export const revalidate = 60;
 
 export default async function Home() {
-  // Buscamos dados reais do banco para popular a home
-  const [projects, testimonials, services] = await Promise.all([
+  const [projects, testimonials, services, pageData] = await Promise.all([
     prisma.project.findMany({
       where: { status: 'PUBLISHED', deletedAt: null },
       orderBy: { createdAt: 'desc' },
@@ -27,6 +26,9 @@ export default async function Home() {
     prisma.service.findMany({
       where: { status: 'ACTIVE' },
       orderBy: { order: 'asc' }
+    }),
+    prisma.page.findFirst({
+      where: { slug: '/', status: 'PUBLISHED' }
     })
   ]);
 
@@ -34,6 +36,14 @@ export default async function Home() {
     <>
       <HeroSection />
       <CountersSection />
+      
+      {/* Se houver conteúdo customizado para a Home no Admin, renderiza aqui */}
+      {pageData?.content && (
+        <section className="py-16 bg-white">
+          <div className="container-custom prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: pageData.content }} />
+        </section>
+      )}
+
       <ServicosSection initialServices={services} />
       <ProcessoSection />
       <PortfolioPreview initialProjects={projects} />
