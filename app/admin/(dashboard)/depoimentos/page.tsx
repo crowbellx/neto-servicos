@@ -12,9 +12,12 @@ export default async function DepoimentosPage() {
           <h1 className="text-2xl font-bold text-gray-900">Depoimentos</h1>
           <p className="text-sm text-gray-500">Gerencie o que os clientes dizem sobre sua empresa</p>
         </div>
-        <button className="bg-laranja text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+        <Link 
+          href="/admin/depoimentos/novo"
+          className="bg-laranja text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"
+        >
           <Plus size={18} /> Novo Depoimento
-        </button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

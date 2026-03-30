@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 function generateSlug(title: string) {
   return title
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") 
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/^-+|-+$/g, '') + '-' + Date.now().toString().slice(-4);
@@ -31,8 +31,6 @@ export async function createProject(formData: FormData) {
       seoDesc: formData.get('seoDesc') as string || null,
     };
 
-    console.log('[PORTFOLIO] Criando projeto:', data.title);
-
     const project = await prisma.project.create({
       data: {
         ...data,
@@ -46,8 +44,7 @@ export async function createProject(formData: FormData) {
     revalidatePath('/');
     return { success: true, data: project };
   } catch (error) {
-    console.error('[PORTFOLIO_ERROR]:', error);
-    return { success: false, error: 'Falha ao salvar no banco de dados' };
+    return { success: false, error: 'Falha ao salvar no banco' };
   }
 }
 
@@ -84,8 +81,23 @@ export async function updateProject(id: string, formData: FormData) {
     
     return { success: true, data: project };
   } catch (error) {
-    console.error('[PORTFOLIO_UPDATE_ERROR]:', error);
-    return { success: false, error: 'Erro ao atualizar projeto' };
+    return { success: false, error: 'Erro ao atualizar' };
+  }
+}
+
+export async function deleteProject(id: string) {
+  try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
+    await prisma.project.delete({ where: { id } });
+    
+    revalidatePath('/admin/portfolio');
+    revalidatePath('/portfolio');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: 'Erro ao excluir' };
   }
 }
 

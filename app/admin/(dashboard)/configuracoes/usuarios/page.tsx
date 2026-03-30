@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { getUsers } from '@/app/actions/users';
+import Link from 'next/link';
 
 export default async function UsersSettingsPage() {
   const session = await auth();
@@ -19,9 +20,12 @@ export default async function UsersSettingsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Usuários</h1>
           <p className="text-sm text-gray-500">Gerencie quem tem acesso ao painel administrativo</p>
         </div>
-        <button className="bg-laranja text-white px-4 py-2 rounded-lg font-medium hover:bg-[#D4651A] transition-colors flex items-center gap-2">
+        <Link 
+          href="/admin/configuracoes/usuarios/novo"
+          className="bg-laranja text-white px-4 py-2 rounded-lg font-medium hover:bg-[#D4651A] transition-colors flex items-center gap-2"
+        >
           <Plus size={18} /> Novo Usuário
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
