@@ -14,7 +14,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           .object({ email: z.string().email(), password: z.string().min(8) })
           .safeParse(credentials);
 
-        if (!parsedCredentials.success) return null;
+        if (!parsedCredentials.success) {
+          console.error('[AUTH] Erro na validação dos campos:', parsedCredentials.error.format());
+          return null;
+        }
 
         const { email, password } = parsedCredentials.data;
         const ip =
@@ -23,92 +26,96 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           null;
         const userAgent = request?.headers?.get('user-agent') ?? null;
 
-        // 20 tentativas por IP em 1 hora.
-        if (ip) {
-          const ipAttempts = await prisma.authAttempt.count({
-            where: {
+        console.log(`[AUTH] Tentativa de login para: ${email} | IP: ${ip}`);
+
+        try {
+          // 1. Verificar conexão e buscar usuário
+          const user = await prisma.user.findUnique({ where: { email } });
+          
+          if (!user) {
+            console.warn(`[AUTH] Usuário não encontrado no banco: ${email}`);
+            await prisma.authAttempt.create({
+              data: { email, ip, userAgent, success: false, reason: 'USER_NOT_FOUND' },
+            }).catch(() => {});
+            throw new Error('INVALID_CREDENTIALS');
+          }
+
+          if (!user.active) {
+            console.warn(`[AUTH] Usuário encontrado mas está inativo: ${email}`);
+            throw new Error('INVALID_CREDENTIALS');
+          }
+
+          // 2. Verificar bloqueio de conta
+          if (user.lockedUntil && user.lockedUntil > new Date()) {
+            console.warn(`[AUTH] Conta bloqueada até ${user.lockedUntil.toISOString()}: ${email}`);
+            throw new Error(`ACCOUNT_LOCKED:${user.lockedUntil.toISOString()}`);
+          }
+
+          // 3. Comparar senhas
+          console.log(`[AUTH] Comparando senha para: ${email}`);
+          const passwordsMatch = await bcrypt.compare(password, user.password);
+          
+          if (!passwordsMatch) {
+            console.warn(`[AUTH] Senha incorreta para: ${email}`);
+            const now = new Date();
+            const shouldResetWindow =
+              !user.lastFailedLoginAt || now.getTime() - user.lastFailedLoginAt.getTime() > 15 * 60 * 1000;
+
+            const nextAttempts = shouldResetWindow ? 1 : user.failedLoginAttempts + 1;
+            const remaining = Math.max(0, 5 - nextAttempts);
+            const lockUntil = nextAttempts >= 5 ? new Date(now.getTime() + 15 * 60 * 1000) : null;
+
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                failedLoginAttempts: nextAttempts >= 5 ? 0 : nextAttempts,
+                lastFailedLoginAt: now,
+                lockedUntil: lockUntil,
+              },
+            });
+
+            await prisma.authAttempt.create({
+              data: { email, ip, userAgent, success: false, reason: lockUntil ? 'ACCOUNT_LOCKED' : 'INVALID_PASSWORD' },
+            });
+
+            if (lockUntil) {
+              throw new Error(`ACCOUNT_LOCKED:${lockUntil.toISOString()}`);
+            }
+            throw new Error(`INVALID_CREDENTIALS:${remaining}`);
+          }
+
+          // 4. Sucesso
+          console.log(`[AUTH] Login bem-sucedido: ${email}`);
+          
+          await prisma.authAttempt.create({
+            data: { email, ip, userAgent, success: true, reason: 'LOGIN_SUCCESS' },
+          });
+
+          await prisma.auditLog.create({
+            data: {
+              userId: user.id,
+              action: 'LOGIN',
+              resource: 'AUTH',
               ip,
-              createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+              userAgent,
             },
           });
-
-          if (ipAttempts >= 20) {
-            await prisma.authAttempt.create({
-              data: { email, ip, userAgent, success: false, reason: 'IP_RATE_LIMIT' },
-            });
-            throw new Error('RATE_LIMIT_IP');
-          }
-        }
-
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.active) {
-          await prisma.authAttempt.create({
-            data: { email, ip, userAgent, success: false, reason: 'USER_NOT_FOUND_OR_INACTIVE' },
-          });
-          throw new Error('INVALID_CREDENTIALS');
-        }
-
-        if (user.lockedUntil && user.lockedUntil > new Date()) {
-          await prisma.authAttempt.create({
-            data: { email, ip, userAgent, success: false, reason: 'ACCOUNT_LOCKED' },
-          });
-          throw new Error(`ACCOUNT_LOCKED:${user.lockedUntil.toISOString()}`);
-        }
-
-        const passwordsMatch = await bcrypt.compare(password, user.password);
-        if (!passwordsMatch) {
-          const now = new Date();
-          const shouldResetWindow =
-            !user.lastFailedLoginAt || now.getTime() - user.lastFailedLoginAt.getTime() > 15 * 60 * 1000;
-
-          const nextAttempts = shouldResetWindow ? 1 : user.failedLoginAttempts + 1;
-          const remaining = Math.max(0, 5 - nextAttempts);
-          const lockUntil = nextAttempts >= 5 ? new Date(now.getTime() + 15 * 60 * 1000) : null;
 
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              failedLoginAttempts: nextAttempts >= 5 ? 0 : nextAttempts,
-              lastFailedLoginAt: now,
-              lockedUntil: lockUntil,
+              failedLoginAttempts: 0,
+              lastFailedLoginAt: null,
+              lockedUntil: null,
+              lastLoginAt: new Date(),
             },
           });
 
-          await prisma.authAttempt.create({
-            data: { email, ip, userAgent, success: false, reason: lockUntil ? 'ACCOUNT_LOCKED' : 'INVALID_PASSWORD' },
-          });
-
-          if (lockUntil) {
-            throw new Error(`ACCOUNT_LOCKED:${lockUntil.toISOString()}`);
-          }
-          throw new Error(`INVALID_CREDENTIALS:${remaining}`);
+          return user;
+        } catch (error) {
+          console.error('[AUTH] Erro crítico no authorize:', error);
+          throw error;
         }
-
-        await prisma.authAttempt.create({
-          data: { email, ip, userAgent, success: true, reason: 'LOGIN_SUCCESS' },
-        });
-
-        await prisma.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'LOGIN',
-            resource: 'AUTH',
-            ip,
-            userAgent,
-          },
-        });
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            failedLoginAttempts: 0,
-            lastFailedLoginAt: null,
-            lockedUntil: null,
-            lastLoginAt: new Date(),
-          },
-        });
-
-        return user;
       },
     }),
   ],
