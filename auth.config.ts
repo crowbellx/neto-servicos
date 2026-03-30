@@ -1,10 +1,16 @@
 import type { NextAuthConfig } from 'next-auth';
 import { canAccessAdminPath } from '@/lib/auth/rbac';
  
+// Definimos um segredo estável para evitar falhas de descriptografia de cookie
+const AUTH_SECRET = process.env.AUTH_SECRET || 'neto-servicos-estrat-123456789';
+
 export const authConfig = {
-  // Se AUTH_SECRET não estiver no .env, usamos um fallback para evitar que a sessão falhe no preview
-  secret: process.env.AUTH_SECRET || 'neto-servicos-super-secret-key-123',
-  trustHost: true, // Importante para ambientes de preview/cloud
+  secret: AUTH_SECRET,
+  trustHost: true,
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
+  },
   pages: {
     signIn: '/admin/login',
   },
@@ -24,10 +30,11 @@ export const authConfig = {
           return true;
         }
         
+        // Se não houver sessão, redireciona para login
         if (!isLoggedIn) return false;
         
+        // Verificação de permissões
         const userRole = (auth?.user as any)?.role || 'VIEWER';
-        
         if (!canAccessAdminPath(nextUrl.pathname, userRole)) {
           if (nextUrl.pathname !== '/admin') {
             return Response.redirect(new URL('/admin', nextUrl));
@@ -35,8 +42,6 @@ export const authConfig = {
         }
 
         return true;
-      } else if (isLoggedIn && nextUrl.pathname === '/admin/login') {
-        return Response.redirect(new URL('/admin', nextUrl));
       }
       return true;
     },
@@ -58,5 +63,5 @@ export const authConfig = {
       return session;
     },
   },
-  providers: [],
+  providers: [], 
 } satisfies NextAuthConfig;

@@ -4,6 +4,10 @@ import AdminSidebar from '@/components/admin/layout/AdminSidebar';
 import AdminTopbar from '@/components/admin/layout/AdminTopbar';
 import { prisma } from '@/lib/prisma';
 
+// Importante para garantir que a sessão seja verificada em tempo real em cada navegação
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -11,9 +15,11 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
-  if (!session) {
+  // Verificação de segurança redundante ao Middleware
+  if (!session?.user) {
     redirect('/admin/login');
   }
+
   const sessionUser = session.user as { id?: string; role?: string; name?: string | null; email?: string | null };
   const userId = sessionUser.id || '';
   const userRole = sessionUser.role || 'VIEWER';
