@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
 
 export async function getMenus() {
   try {
@@ -10,65 +11,50 @@ export async function getMenus() {
     });
     return { success: true, data: menus };
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    return { success: false, error: 'Failed to fetch menus' };
+    return { success: false, error: 'Falha ao buscar menus' };
   }
 }
 
-export async function getMenuById(id: string) {
+export async function createMenu(data: { name: string; location: string; items: string }) {
   try {
-    const menu = await prisma.menu.findUnique({
-      where: { id },
-    });
-    if (!menu) return { success: false, error: 'Menu not found' };
-    return { success: true, data: menu };
-  } catch (error) {
-    console.error('Error fetching menu:', error);
-    return { success: false, error: 'Failed to fetch menu' };
-  }
-}
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
 
-export async function createMenu(data: any) {
-  try {
     const menu = await prisma.menu.create({
-      data: {
-        ...data,
-      },
+      data,
     });
     revalidatePath('/admin/menus');
     return { success: true, data: menu };
   } catch (error) {
-    console.error('Error creating menu:', error);
-    return { success: false, error: 'Failed to create menu' };
+    return { success: false, error: 'Falha ao criar menu' };
   }
 }
 
 export async function updateMenu(id: string, data: any) {
   try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
     const menu = await prisma.menu.update({
       where: { id },
-      data: {
-        ...data,
-      },
+      data,
     });
     revalidatePath('/admin/menus');
-    revalidatePath(`/admin/menus/${id}`);
     return { success: true, data: menu };
   } catch (error) {
-    console.error('Error updating menu:', error);
-    return { success: false, error: 'Failed to update menu' };
+    return { success: false, error: 'Falha ao atualizar menu' };
   }
 }
 
 export async function deleteMenu(id: string) {
   try {
-    await prisma.menu.delete({
-      where: { id },
-    });
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
+    await prisma.menu.delete({ where: { id } });
     revalidatePath('/admin/menus');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting menu:', error);
-    return { success: false, error: 'Failed to delete menu' };
+    return { success: false, error: 'Falha ao excluir menu' };
   }
 }

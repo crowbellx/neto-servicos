@@ -1,161 +1,178 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu as MenuIcon, Plus, GripVertical, Edit2, Trash2, Save } from 'lucide-react';
-import { Menu } from '@prisma/client';
+import { Plus, GripVertical, Edit2, Trash2, Save, X } from 'lucide-react';
+import { createMenu, updateMenu, deleteMenu } from '@/app/actions/menus';
+import { toast } from 'sonner';
 
-interface MenusClientProps {
-  initialMenus: Menu[];
-}
+export default function MenusClient({ initialMenus }: { initialMenus: any[] }) {
+  const [menus, setMenus] = useState(initialMenus);
+  const [selectedMenu, setSelectedMenu] = useState<any | null>(menus[0] || null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-export default function MenusClient({ initialMenus }: MenusClientProps) {
-  const [menus, setMenus] = useState<Menu[]>(initialMenus);
-  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(menus[0] || null);
+  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const location = formData.get('location') as string;
 
-  const parsedItems = selectedMenu && selectedMenu.items ? JSON.parse(selectedMenu.items) : [];
+    const res = await createMenu({ name, location, items: '[]' });
+    if (res.success) {
+      setMenus([res.data, ...menus]);
+      setSelectedMenu(res.data);
+      setIsCreating(false);
+      toast.success('Menu criado!');
+    }
+  };
+
+  const handleSaveItems = async () => {
+    if (!selectedMenu) return;
+    setIsSaving(true);
+    const res = await updateMenu(selectedMenu.id, { items: selectedMenu.items });
+    setIsSaving(false);
+    if (res.success) toast.success('Menu salvo!');
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Excluir este menu?')) return;
+    const res = await deleteMenu(id);
+    if (res.success) {
+      setMenus(menus.filter(m => m.id !== id));
+      setSelectedMenu(menus[0] || null);
+      toast.success('Menu excluído');
+    }
+  };
+
+  const addItem = (label: string, url: string) => {
+    if (!selectedMenu) return;
+    const items = JSON.parse(selectedMenu.items || '[]');
+    items.push({ label, url });
+    setSelectedMenu({ ...selectedMenu, items: JSON.stringify(items) });
+  };
 
   return (
-    <div className="flex-1 flex gap-6 min-h-0">
-      {/* Coluna Esquerda - Lista de Menus */}
-      <div className="w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900">Seus Menus</h2>
-          <button className="text-laranja hover:bg-orange-50 p-1.5 rounded-md transition-colors" title="Criar novo menu">
+    <div className="flex gap-6 h-full">
+      {/* Lista de Menus */}
+      <div className="w-80 flex flex-col gap-4">
+        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <h2 className="font-bold text-gray-900">Menus</h2>
+          <button onClick={() => setIsCreating(true)} className="p-1.5 bg-laranja/10 text-laranja rounded-md hover:bg-laranja/20">
             <Plus size={18} />
           </button>
         </div>
 
-        <div className="space-y-2">
-          {menus.map((menu) => {
-            const itemsCount = menu.items ? JSON.parse(menu.items).length : 0;
-            return (
-              <div 
-                key={menu.id} 
-                onClick={() => setSelectedMenu(menu)}
-                className={`p-4 rounded-xl border transition-colors cursor-pointer ${
-                  selectedMenu?.id === menu.id ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-100 hover:border-gray-200'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className={`font-bold ${selectedMenu?.id === menu.id ? 'text-laranja' : 'text-gray-900'}`}>{menu.name}</h3>
-                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{menu.location}</span>
-                </div>
-                <p className="text-sm text-gray-500">{itemsCount} itens</p>
+        <div className="space-y-2 overflow-y-auto">
+          {menus.map((menu) => (
+            <div 
+              key={menu.id} 
+              onClick={() => setSelectedMenu(menu)}
+              className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedMenu?.id === menu.id ? 'bg-orange-50 border-laranja/30' : 'bg-white border-gray-100 hover:border-gray-200'}`}
+            >
+              <div className="flex justify-between items-start">
+                <h3 className={`font-bold text-sm ${selectedMenu?.id === menu.id ? 'text-laranja' : 'text-gray-900'}`}>{menu.name}</h3>
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(menu.id); }} className="text-gray-400 hover:text-red-500">
+                  <Trash2 size={14} />
+                </button>
               </div>
-            );
-          })}
-          {menus.length === 0 && (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              Nenhum menu encontrado.
+              <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">{menu.location}</p>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* Coluna Direita - Editor do Menu Selecionado */}
-      {selectedMenu ? (
-        <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
+      {/* Editor de Itens */}
+      <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col">
+        {selectedMenu ? (
+          <>
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Editando: {selectedMenu.name}</h2>
-                <p className="text-sm text-gray-500">Arraste e solte para reordenar os itens</p>
+                <p className="text-sm text-gray-500">Gerencie os links deste menu</p>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors shadow-sm">
-                <Save size={16} /> Salvar Menu
+              <button onClick={handleSaveItems} disabled={isSaving} className="bg-laranja text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                <Save size={18} /> {isSaving ? 'Salvando...' : 'Salvar Menu'}
               </button>
             </div>
 
-            <div className="flex gap-6">
-              {/* Adicionar Itens */}
-              <div className="w-64 flex-shrink-0 space-y-4">
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 p-3 border-b border-gray-200 font-medium text-gray-900 text-sm">
-                    Adicionar Páginas
-                  </div>
-                  <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" className="rounded text-laranja focus:ring-laranja" /> Início
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" className="rounded text-laranja focus:ring-laranja" /> Sobre Nós
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" className="rounded text-laranja focus:ring-laranja" /> Serviços
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" className="rounded text-laranja focus:ring-laranja" /> Contato
-                    </label>
-                  </div>
-                  <div className="p-3 border-t border-gray-200 bg-gray-50">
-                    <button className="w-full py-1.5 bg-white border border-gray-200 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition-colors">
-                      Adicionar ao Menu
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 p-3 border-b border-gray-200 font-medium text-gray-900 text-sm">
-                    Link Personalizado
-                  </div>
-                  <div className="p-3 space-y-3">
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">URL</label>
-                      <input type="url" placeholder="https://" className="w-full border border-gray-200 rounded p-1.5 text-sm focus:ring-laranja focus:border-laranja outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Texto do Link</label>
-                      <input type="text" placeholder="Ex: Meu Link" className="w-full border border-gray-200 rounded p-1.5 text-sm focus:ring-laranja focus:border-laranja outline-none" />
-                    </div>
-                  </div>
-                  <div className="p-3 border-t border-gray-200 bg-gray-50">
-                    <button className="w-full py-1.5 bg-white border border-gray-200 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition-colors">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 overflow-hidden">
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <h3 className="font-bold text-sm text-gray-900 mb-4">Adicionar Link</h3>
+                  <div className="space-y-3">
+                    <input id="new-label" placeholder="Texto do Link" className="w-full p-2 text-sm border border-gray-200 rounded-lg outline-none" />
+                    <input id="new-url" placeholder="URL (ex: /sobre)" className="w-full p-2 text-sm border border-gray-200 rounded-lg outline-none" />
+                    <button 
+                      onClick={() => {
+                        const l = document.getElementById('new-label') as HTMLInputElement;
+                        const u = document.getElementById('new-url') as HTMLInputElement;
+                        if (l.value && u.value) {
+                          addItem(l.value, u.value);
+                          l.value = ''; u.value = '';
+                        }
+                      }}
+                      className="w-full py-2 bg-gray-900 text-white rounded-lg text-sm font-bold"
+                    >
                       Adicionar ao Menu
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Estrutura do Menu */}
-              <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 p-4 min-h-[400px]">
-                <div className="space-y-2">
-                  {parsedItems.map((item: any, index: number) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between group hover:border-laranja transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="cursor-move text-gray-400 hover:text-gray-600">
-                          <GripVertical size={18} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900 text-sm">{item.label}</div>
-                          <div className="text-xs text-gray-500 font-mono">{item.url}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-1.5 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded transition-colors" title="Editar">
-                          <Edit2 size={14} />
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Remover">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+              <div className="lg:col-span-2 space-y-2 overflow-y-auto pr-2">
+                {JSON.parse(selectedMenu.items || '[]').map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl group hover:border-laranja/30">
+                    <GripVertical size={18} className="text-gray-300 cursor-move" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-gray-900">{item.label}</p>
+                      <p className="text-xs text-gray-500">{item.url}</p>
                     </div>
-                  ))}
-                  {parsedItems.length === 0 && (
-                    <div className="text-center py-12 text-gray-500 text-sm">
-                      Nenhum item neste menu.
-                    </div>
-                  )}
-                </div>
+                    <button 
+                      onClick={() => {
+                        const items = JSON.parse(selectedMenu.items);
+                        items.splice(idx, 1);
+                        setSelectedMenu({ ...selectedMenu, items: JSON.stringify(items) });
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
+          </>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-gray-400">
+            <Plus size={48} className="mb-4 opacity-20" />
+            <p>Selecione ou crie um menu para começar</p>
           </div>
-        </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200">
-          <div className="text-center text-gray-500">
-            <MenuIcon size={48} className="mx-auto mb-4 opacity-20" />
-            <p>Selecione um menu para editar ou crie um novo.</p>
-          </div>
+        )}
+      </div>
+
+      {/* Modal Novo Menu */}
+      {isCreating && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-lg">Novo Menu</h3>
+              <button type="button" onClick={() => setIsCreating(false)}><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold mb-1">Nome do Menu</label>
+                <input name="name" required placeholder="Ex: Menu Principal" className="w-full border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-laranja" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">Localização (Slug)</label>
+                <input name="location" required placeholder="Ex: header-main" className="w-full border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-laranja font-mono" />
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 flex justify-end gap-3">
+              <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 text-sm font-bold text-gray-500">Cancelar</button>
+              <button type="submit" className="px-6 py-2 bg-laranja text-white rounded-lg font-bold text-sm">Criar Menu</button>
+            </div>
+          </form>
         </div>
       )}
     </div>
