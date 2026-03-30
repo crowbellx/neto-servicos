@@ -7,16 +7,37 @@ import DepoimentosSection from '@/components/home/DepoimentosSection';
 import DiferenciaisSection from '@/components/home/DiferenciaisSection';
 import CTASection from '@/components/home/CTASection';
 import ContatoSection from '@/components/contato/ContatoSection';
+import { prisma } from '@/lib/prisma';
 
-export default function Home() {
+export const revalidate = 60; // Revalida a cada minuto
+
+export default async function Home() {
+  // Buscamos dados reais do banco para popular a home
+  const [projects, testimonials, services] = await Promise.all([
+    prisma.project.findMany({
+      where: { status: 'PUBLISHED', deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 6
+    }),
+    prisma.testimonial.findMany({
+      where: { active: true },
+      orderBy: { order: 'asc' },
+      take: 5
+    }),
+    prisma.service.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: { order: 'asc' }
+    })
+  ]);
+
   return (
     <>
       <HeroSection />
       <CountersSection />
-      <ServicosSection />
+      <ServicosSection initialServices={services} />
       <ProcessoSection />
-      <PortfolioPreview />
-      <DepoimentosSection />
+      <PortfolioPreview initialProjects={projects} />
+      <DepoimentosSection initialTestimonials={testimonials} />
       <DiferenciaisSection />
       <CTASection />
       <ContatoSection />

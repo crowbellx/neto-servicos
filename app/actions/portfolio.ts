@@ -7,21 +7,85 @@ import { revalidatePath } from 'next/cache';
 function generateSlug(title: string) {
   return title
     .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/^-+|-+$/g, '') + '-' + Date.now().toString().slice(-4);
 }
 
-export async function getProjects() {
+export async function createProject(formData: FormData) {
   try {
-    const projects = await prisma.project.findMany({
-      orderBy: { createdAt: 'desc' },
-      where: { deletedAt: null },
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
+    const data = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      content: formData.get('content') as string,
+      category: formData.get('category') as string,
+      tags: formData.get('tags') as string || '[]',
+      images: formData.get('images') as string || '[]',
+      status: formData.get('status') as string || 'DRAFT',
+      featured: formData.get('featured') === 'true',
+      seoTitle: formData.get('seoTitle') as string || null,
+      seoDesc: formData.get('seoDesc') as string || null,
+    };
+
+    console.log('[PORTFOLIO] Criando projeto:', data.title);
+
+    const project = await prisma.project.create({
+      data: {
+        ...data,
+        slug: generateSlug(data.title),
+        publishedAt: data.status === 'PUBLISHED' ? new Date() : null,
+      },
     });
-    return { success: true, data: projects };
+    
+    revalidatePath('/admin/portfolio');
+    revalidatePath('/portfolio');
+    revalidatePath('/');
+    return { success: true, data: project };
   } catch (error) {
-    console.error('Error fetching projects:', error);
-    return { success: false, error: 'Failed to fetch projects' };
+    console.error('[PORTFOLIO_ERROR]:', error);
+    return { success: false, error: 'Falha ao salvar no banco de dados' };
+  }
+}
+
+export async function updateProject(id: string, formData: FormData) {
+  try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
+    const data = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      content: formData.get('content') as string,
+      category: formData.get('category') as string,
+      tags: formData.get('tags') as string || '[]',
+      images: formData.get('images') as string || '[]',
+      status: formData.get('status') as string || 'DRAFT',
+      featured: formData.get('featured') === 'true',
+      seoTitle: formData.get('seoTitle') as string || null,
+      seoDesc: formData.get('seoDesc') as string || null,
+    };
+
+    const project = await prisma.project.update({
+      where: { id },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+    
+    revalidatePath('/admin/portfolio');
+    revalidatePath(`/portfolio/${project.slug}`);
+    revalidatePath('/portfolio');
+    revalidatePath('/');
+    
+    return { success: true, data: project };
+  } catch (error) {
+    console.error('[PORTFOLIO_UPDATE_ERROR]:', error);
+    return { success: false, error: 'Erro ao atualizar projeto' };
   }
 }
 
@@ -30,129 +94,8 @@ export async function getProjectById(id: string) {
     const project = await prisma.project.findUnique({
       where: { id, deletedAt: null },
     });
-    if (!project) return { success: false, error: 'Project not found' };
     return { success: true, data: project };
   } catch (error) {
-    console.error('Error fetching project:', error);
-    return { success: false, error: 'Failed to fetch project' };
-  }
-}
-
-export async function createProject(formData: FormData) {
-  try {
-    const session = await auth();
-    if (!session) {
-      return { success: false, error: 'Não autorizado' };
-    }
-
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const content = formData.get('content') as string;
-    const category = formData.get('category') as string;
-    const tags = formData.get('tags') as string;
-    const images = formData.get('images') as string;
-    const status = formData.get('status') as string || 'DRAFT';
-    const featured = formData.get('featured') === 'true';
-    
-    const seoTitle = formData.get('seoTitle') as string || null;
-    const seoDesc = formData.get('seoDesc') as string || null;
-    const ogImage = formData.get('ogImage') as string || null;
-
-    const project = await prisma.project.create({
-      data: {
-        title,
-        slug: generateSlug(title),
-        description,
-        content,
-        category,
-        tags: tags || '[]',
-        images: images || '[]',
-        status,
-        featured,
-        seoTitle,
-        seoDesc,
-        ogImage,
-        publishedAt: status === 'PUBLISHED' ? new Date() : null,
-      },
-    });
-    
-    revalidatePath('/admin/portfolio');
-    revalidatePath('/portfolio');
-    return { success: true, data: project };
-  } catch (error) {
-    console.error('Error creating project:', error);
-    return { success: false, error: 'Failed to create project' };
-  }
-}
-
-export async function updateProject(id: string, formData: FormData) {
-  try {
-    const session = await auth();
-    if (!session) {
-      return { success: false, error: 'Não autorizado' };
-    }
-
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const content = formData.get('content') as string;
-    const category = formData.get('category') as string;
-    const tags = formData.get('tags') as string;
-    const images = formData.get('images') as string;
-    const status = formData.get('status') as string || 'DRAFT';
-    const featured = formData.get('featured') === 'true';
-    
-    const seoTitle = formData.get('seoTitle') as string || null;
-    const seoDesc = formData.get('seoDesc') as string || null;
-    const ogImage = formData.get('ogImage') as string || null;
-
-    const existingProject = await prisma.project.findUnique({ where: { id } });
-    if (!existingProject) return { success: false, error: 'Project not found' };
-
-    const project = await prisma.project.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        content,
-        category,
-        tags: tags || '[]',
-        images: images || '[]',
-        status,
-        featured,
-        seoTitle,
-        seoDesc,
-        ogImage,
-        publishedAt: status === 'PUBLISHED' && existingProject.status !== 'PUBLISHED' ? new Date() : existingProject.publishedAt,
-      },
-    });
-    
-    revalidatePath('/admin/portfolio');
-    revalidatePath(`/admin/portfolio/${id}/editar`);
-    revalidatePath('/portfolio');
-    
-    return { success: true, data: project };
-  } catch (error) {
-    console.error('Error updating project:', error);
-    return { success: false, error: 'Failed to update project' };
-  }
-}
-
-export async function deleteProject(id: string) {
-  try {
-    const session = await auth();
-    if (!session) {
-      return { success: false, error: 'Não autorizado' };
-    }
-
-    await prisma.project.update({
-      where: { id },
-      data: { deletedAt: new Date(), status: 'ARCHIVED' },
-    });
-    
-    revalidatePath('/admin/portfolio');
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting project:', error);
-    return { success: false, error: 'Failed to delete project' };
+    return { success: false, error: 'Não encontrado' };
   }
 }
