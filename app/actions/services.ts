@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
 
 export async function getServices() {
   try {
@@ -30,12 +31,20 @@ export async function getServiceById(id: string) {
 
 export async function createService(data: any) {
   try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
     const service = await prisma.service.create({
       data: {
         ...data,
       },
     });
+    
+    // Limpa o cache das páginas onde os serviços aparecem
     revalidatePath('/admin/servicos');
+    revalidatePath('/servicos');
+    revalidatePath('/');
+    
     return { success: true, data: service };
   } catch (error) {
     console.error('Error creating service:', error);
@@ -45,14 +54,21 @@ export async function createService(data: any) {
 
 export async function updateService(id: string, data: any) {
   try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
     const service = await prisma.service.update({
       where: { id },
       data: {
         ...data,
       },
     });
+    
     revalidatePath('/admin/servicos');
     revalidatePath(`/admin/servicos/${id}`);
+    revalidatePath('/servicos');
+    revalidatePath('/');
+    
     return { success: true, data: service };
   } catch (error) {
     console.error('Error updating service:', error);
@@ -62,10 +78,17 @@ export async function updateService(id: string, data: any) {
 
 export async function deleteService(id: string) {
   try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
     await prisma.service.delete({
       where: { id },
     });
+    
     revalidatePath('/admin/servicos');
+    revalidatePath('/servicos');
+    revalidatePath('/');
+    
     return { success: true };
   } catch (error) {
     console.error('Error deleting service:', error);

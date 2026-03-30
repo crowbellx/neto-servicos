@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { Printer, MousePointerClick, Monitor, Check } from 'lucide-react';
+import { Printer, MousePointerClick, Monitor } from 'lucide-react';
 
 interface ServicosSectionProps {
   initialServices?: any[];
@@ -20,9 +20,15 @@ const COLOR_MAP: Record<string, string> = {
   'Digital': 'azul',
 };
 
+const FALLBACK_SERVICES = [
+  { id: 'f1', slug: 'grafica', title: 'Gráfica', category: 'Gráfica', description: 'Impressão de alta qualidade, banners, cartões e materiais promocionais com acabamento premium.' },
+  { id: 'f2', slug: 'design', title: 'Design', category: 'Design', description: 'Identidade visual, logotipos e design estratégico para destacar sua empresa no mercado.' },
+  { id: 'f3', slug: 'digital', title: 'Digital', category: 'Digital', description: 'Criação de sites modernos, e-commerces e presença digital completa para o seu negócio.' },
+];
+
 export default function ServicosSection({ initialServices = [] }: ServicosSectionProps) {
-  // Agrupamos por categoria se necessário ou exibimos os principais
-  const services = initialServices.slice(0, 3);
+  // Se não vier nada do banco, usamos os fallbacks para o site não ficar feio
+  const servicesToDisplay = initialServices.length > 0 ? initialServices.slice(0, 3) : FALLBACK_SERVICES;
 
   return (
     <section id="servicos" className="section-py bg-branco relative">
@@ -48,7 +54,7 @@ export default function ServicosSection({ initialServices = [] }: ServicosSectio
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {services.map((service, index) => {
+          {servicesToDisplay.map((service, index) => {
             const Icon = ICON_MAP[service.category] || Printer;
             const color = COLOR_MAP[service.category] || 'laranja';
             

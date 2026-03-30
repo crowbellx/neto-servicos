@@ -6,7 +6,6 @@ import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_FILES_PER_REQUEST = 10;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 function getFileExtension(filename: string): string {
@@ -30,6 +29,8 @@ export async function POST(request: Request) {
     const files = formData.getAll('files');
     const folderRaw = (formData.get('folder')?.toString() || 'uploads').replace(/^\/+|\/+$/g, '');
     const folder = folderRaw.replace(/[^a-zA-Z0-9/_-]/g, '') || 'uploads';
+    
+    // Fallback para bucket 'media' se variável não estiver definida
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
 
     if (!files.length) {
@@ -45,12 +46,20 @@ export async function POST(request: Request) {
       if (!(entry instanceof File)) continue;
 
       if (!ALLOWED_TYPES.has(entry.type)) {
+        console.warn(`[UPLOAD] Tipo de arquivo não permitido: ${entry.type}`);
         return NextResponse.json({ error: `Tipo não suportado: ${entry.type}` }, { status: 400 });
+      }
+
+      if (entry.size > MAX_FILE_SIZE) {
+        console.warn(`[UPLOAD] Arquivo muito grande: ${entry.size} bytes`);
+        return NextResponse.json({ error: 'Arquivo excede o limite de 10MB' }, { status: 400 });
       }
 
       const ext = getFileExtension(entry.name);
       const filePath = `${folder}/${randomUUID()}.${ext}`;
       const bytes = await entry.arrayBuffer();
+
+      console.log(`[UPLOAD] Enviando para Supabase: ${filePath}`);
 
       const { data, error: uploadError } = await supabase.storage.from(bucket).upload(filePath, bytes, {
         contentType: entry.type,
@@ -75,6 +84,7 @@ export async function POST(request: Request) {
     }
 
     if (uploaded.length) {
+      console.log(`[UPLOAD] Salvando ${uploaded.length} registros no banco de dados Prisma`);
       await prisma.media.createMany({
         data: uploaded.map((file) => ({
           filename: file.path,
@@ -87,8 +97,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ files: uploaded });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[UPLOAD_CRITICAL_ERROR]:', error);
-    return NextResponse.json({ error: 'Erro interno no servidor de upload' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Erro interno no servidor de upload',
+      details: error.message 
+    }, { status: 500 });
   }
 }
