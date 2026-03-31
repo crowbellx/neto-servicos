@@ -11,8 +11,15 @@ export default async function GeneralSettingsPage() {
     redirect('/admin/login');
   }
 
-  const { data: settings } = await getSettings('general');
-  const parsedSettings = settings?.data ? JSON.parse(settings.data) : {};
+  const { data: setting } = await getSettings('general');
+  let parsedSettings: any = {};
+  if (setting?.data) {
+    try {
+      parsedSettings = JSON.parse(setting.data);
+    } catch (error) {
+      console.error('Error parsing general settings:', error);
+    }
+  }
 
   const saveAction = async (formData: FormData) => {
     'use server';

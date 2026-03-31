@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Upload, X, Loader2, ImageIcon } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import Image from 'next/image';
@@ -21,11 +21,18 @@ export default function ImageUploadField({
   const [url, setUrl] = useState(defaultValue || '');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createSupabaseBrowserClient();
+  
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check your environment variables.');
+      alert('Configuração incompleta: Variáveis do Supabase não encontradas.');
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -34,7 +41,7 @@ export default function ImageUploadField({
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `settings/${fileName}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file);
 

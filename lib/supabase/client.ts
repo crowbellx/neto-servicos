@@ -1,16 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr';
 
-function getEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing environment variable: ${name}`);
-  }
-  return value;
-}
-
 export function createSupabaseBrowserClient() {
-  return createBrowserClient(
-    getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase environment variables are missing. Image uploads will not work.');
+    return null;
+  }
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey);
 }
