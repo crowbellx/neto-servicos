@@ -4,7 +4,11 @@ import { hasRequiredRole } from '@/lib/auth/rbac';
 import { getUserById } from '@/app/actions/users';
 import UserForm from '@/components/admin/users/UserForm';
 
-export default async function EditUserPage({ params }: { params: { id: string } }) {
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function EditUserPage({ params }: Props) {
   const session = await auth();
   const currentUser = session?.user as any;
 
@@ -12,7 +16,8 @@ export default async function EditUserPage({ params }: { params: { id: string } 
     redirect('/admin');
   }
 
-  const { data: userToEdit } = await getUserById(params.id);
+  const { id } = await params;
+  const { data: userToEdit } = await getUserById(id);
 
   if (!userToEdit) {
     notFound();
