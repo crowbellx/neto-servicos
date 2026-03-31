@@ -6,23 +6,39 @@ import type { Metadata } from 'next';
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await prisma.page.findFirst({ where: { slug: 'portfolio', status: 'PUBLISHED' } });
-  return {
-    title: page?.seoTitle || 'Portfólio | Neto Serviços',
-    description: page?.seoDesc || 'Confira nossos trabalhos recentes em design, web e gráfica.',
-  };
+  try {
+    const page = await prisma.page.findFirst({ where: { slug: 'portfolio', status: 'PUBLISHED' } });
+    return {
+      title: page?.seoTitle || 'Portfólio | Neto Serviços',
+      description: page?.seoDesc || 'Confira nossos trabalhos recentes em design, web e gráfica.',
+    };
+  } catch (error) {
+    return {
+      title: 'Portfólio | Neto Serviços',
+      description: 'Confira nossos trabalhos recentes em design, web e gráfica.',
+    };
+  }
 }
 
 export default async function PortfolioPage() {
-  const [projects, pageData] = await Promise.all([
-    prisma.project.findMany({
-      where: { status: 'PUBLISHED', deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.page.findFirst({
-      where: { slug: 'portfolio', status: 'PUBLISHED' }
-    })
-  ]);
+  let projects: any[] = [];
+  let pageData: any = null;
+
+  try {
+    const [fetchedProjects, fetchedPageData] = await Promise.all([
+      prisma.project.findMany({
+        where: { status: 'PUBLISHED', deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.page.findFirst({
+        where: { slug: 'portfolio', status: 'PUBLISHED' }
+      })
+    ]);
+    projects = fetchedProjects;
+    pageData = fetchedPageData;
+  } catch (error) {
+    console.error('[Build] Erro ao buscar dados de Portfólio:', error);
+  }
 
   return (
     <div className="bg-branco min-h-screen">

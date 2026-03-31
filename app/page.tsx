@@ -12,25 +12,38 @@ import { prisma } from '@/lib/prisma';
 export const revalidate = 60;
 
 export default async function Home() {
-  const [projects, testimonials, services, pageData] = await Promise.all([
-    prisma.project.findMany({
-      where: { status: 'PUBLISHED', deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      take: 6
-    }),
-    prisma.testimonial.findMany({
-      where: { active: true },
-      orderBy: { order: 'asc' },
-      take: 5
-    }),
-    prisma.service.findMany({
-      where: { status: 'ACTIVE' },
-      orderBy: { order: 'asc' }
-    }),
-    prisma.page.findFirst({
-      where: { slug: '/', status: 'PUBLISHED' }
-    })
-  ]);
+  let projects: any[] = [];
+  let testimonials: any[] = [];
+  let services: any[] = [];
+  let pageData: any = null;
+
+  try {
+    const [fetchedProjects, fetchedTestimonials, fetchedServices, fetchedPageData] = await Promise.all([
+      prisma.project.findMany({
+        where: { status: 'PUBLISHED', deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 6
+      }),
+      prisma.testimonial.findMany({
+        where: { active: true },
+        orderBy: { order: 'asc' },
+        take: 5
+      }),
+      prisma.service.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: { order: 'asc' }
+      }),
+      prisma.page.findFirst({
+        where: { slug: '/', status: 'PUBLISHED' }
+      })
+    ]);
+    projects = fetchedProjects;
+    testimonials = fetchedTestimonials;
+    services = fetchedServices;
+    pageData = fetchedPageData;
+  } catch (error) {
+    console.error('[Build] Erro ao buscar dados da Home:', error);
+  }
 
   return (
     <>

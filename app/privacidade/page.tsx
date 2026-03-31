@@ -4,15 +4,27 @@ import { ArrowLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await prisma.page.findFirst({ where: { slug: 'privacidade', status: 'PUBLISHED' } });
-  return {
-    title: page?.seoTitle || 'Política de Privacidade | Neto Serviços',
-    description: page?.seoDesc || 'Como tratamos e protegemos os seus dados.',
-  };
+  try {
+    const page = await prisma.page.findFirst({ where: { slug: 'privacidade', status: 'PUBLISHED' } });
+    return {
+      title: page?.seoTitle || 'Política de Privacidade | Neto Serviços',
+      description: page?.seoDesc || 'Como tratamos e protegemos os seus dados.',
+    };
+  } catch (error) {
+    return {
+      title: 'Política de Privacidade | Neto Serviços',
+      description: 'Como tratamos e protegemos os seus dados.',
+    };
+  }
 }
 
 export default async function PrivacidadePage() {
-  const page = await prisma.page.findFirst({ where: { slug: 'privacidade', status: 'PUBLISHED' } });
+  let page = null;
+  try {
+    page = await prisma.page.findFirst({ where: { slug: 'privacidade', status: 'PUBLISHED' } });
+  } catch (error) {
+    console.error('[Build] Erro ao buscar dados de Privacidade:', error);
+  }
 
   return (
     <div className="bg-branco min-h-screen pb-24">

@@ -6,11 +6,18 @@ import type { Metadata } from 'next';
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await prisma.page.findFirst({ where: { slug: 'servicos', status: 'PUBLISHED' } });
-  return {
-    title: page?.seoTitle || 'Serviços | Neto Serviços',
-    description: page?.seoDesc || 'Conheça nossas especialidades em Gráfica, Design e Digital.',
-  };
+  try {
+    const page = await prisma.page.findFirst({ where: { slug: 'servicos', status: 'PUBLISHED' } });
+    return {
+      title: page?.seoTitle || 'Serviços | Neto Serviços',
+      description: page?.seoDesc || 'Conheça nossas especialidades em Gráfica, Design e Digital.',
+    };
+  } catch (error) {
+    return {
+      title: 'Serviços | Neto Serviços',
+      description: 'Conheça nossas especialidades em Gráfica, Design e Digital.',
+    };
+  }
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -26,15 +33,24 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export default async function ServicosPage() {
-  const [dbServices, pageData] = await Promise.all([
-    prisma.service.findMany({
-      where: { status: 'ACTIVE' },
-      orderBy: { order: 'asc' }
-    }),
-    prisma.page.findFirst({
-      where: { slug: 'servicos', status: 'PUBLISHED' }
-    })
-  ]);
+  let dbServices: any[] = [];
+  let pageData: any = null;
+
+  try {
+    const [fetchedServices, fetchedPageData] = await Promise.all([
+      prisma.service.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: { order: 'asc' }
+      }),
+      prisma.page.findFirst({
+        where: { slug: 'servicos', status: 'PUBLISHED' }
+      })
+    ]);
+    dbServices = fetchedServices;
+    pageData = fetchedPageData;
+  } catch (error) {
+    console.error('[Build] Erro ao buscar dados de Serviços:', error);
+  }
 
   return (
     <div className="bg-branco min-h-screen">

@@ -6,15 +6,27 @@ import { Target, Eye, Heart, ArrowLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await prisma.page.findFirst({ where: { slug: 'sobre', status: 'PUBLISHED' } });
-  return {
-    title: page?.seoTitle || 'Sobre Nós | Neto Serviços',
-    description: page?.seoDesc || 'Conheça a história e os valores da Neto Serviços.',
-  };
+  try {
+    const page = await prisma.page.findFirst({ where: { slug: 'sobre', status: 'PUBLISHED' } });
+    return {
+      title: page?.seoTitle || 'Sobre Nós | Neto Serviços',
+      description: page?.seoDesc || 'Conheça a história e os valores da Neto Serviços.',
+    };
+  } catch (error) {
+    return {
+      title: 'Sobre Nós | Neto Serviços',
+      description: 'Conheça a história e os valores da Neto Serviços.',
+    };
+  }
 }
 
 export default async function SobrePage() {
-  const page = await prisma.page.findFirst({ where: { slug: 'sobre', status: 'PUBLISHED' } });
+  let page = null;
+  try {
+    page = await prisma.page.findFirst({ where: { slug: 'sobre', status: 'PUBLISHED' } });
+  } catch (error) {
+    console.error('[Build] Erro ao buscar dados de Sobre:', error);
+  }
 
   const valores = [
     { icon: Target, title: 'Missão', desc: 'Simplificar a comunicação das empresas com excelência.', color: 'text-teal', bg: 'bg-teal-light' },
