@@ -1,14 +1,17 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { getUsers } from '@/app/actions/users';
 import Link from 'next/link';
+import { hasRequiredRole } from '@/lib/auth/rbac';
+import UserActions from '@/components/admin/users/UserActions';
 
 export default async function UsersSettingsPage() {
   const session = await auth();
+  const currentUser = session?.user as any;
 
-  if (!session) {
-    redirect('/admin/login');
+  if (!currentUser || !hasRequiredRole(currentUser.role, 'ADMIN')) {
+    redirect('/admin');
   }
 
   const { data: users } = await getUsers();
@@ -60,16 +63,13 @@ export default async function UsersSettingsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                       user.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
                       {user.active ? 'Ativo' : 'Inativo'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-laranja hover:bg-orange-50 rounded-md transition-colors"><Edit size={16} /></button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><Trash2 size={16} /></button>
-                    </div>
+                    <UserActions userId={user.id} userName={user.name || ''} />
                   </td>
                 </tr>
               ))}

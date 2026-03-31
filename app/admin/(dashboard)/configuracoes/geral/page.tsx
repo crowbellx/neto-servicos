@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Save, Upload, Building2, Phone, Mail, MapPin } from 'lucide-react';
 import { getSettings, updateSettings } from '@/app/actions/settings';
+import ImageUploadField from '@/components/admin/settings/ImageUploadField';
 
 export default async function GeneralSettingsPage() {
   const session = await auth();
@@ -84,27 +85,18 @@ export default async function GeneralSettingsPage() {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="text-sm font-bold text-gray-900 mb-2 block">Logotipo Principal</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer h-40">
-                  <div className="w-10 h-10 rounded-full bg-laranja/10 flex items-center justify-center text-laranja mb-3">
-                    <Upload size={20} />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900">Upload Logo</p>
-                  <p className="text-xs text-gray-500 mt-1">PNG transparente recomendado</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-gray-900 mb-2 block">Favicon (Ícone da Aba)</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer h-40">
-                  <div className="w-10 h-10 rounded-full bg-laranja/10 flex items-center justify-center text-laranja mb-3">
-                    <Upload size={20} />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900">Upload Favicon</p>
-                  <p className="text-xs text-gray-500 mt-1">Formato ICO ou PNG 32x32</p>
-                </div>
-              </div>
+              <ImageUploadField 
+                label="Logotipo Principal" 
+                name="logo" 
+                defaultValue={parsedSettings.logo}
+                helperText="PNG transparente recomendado"
+              />
+              <ImageUploadField 
+                label="Favicon (Ícone da Aba)" 
+                name="favicon" 
+                defaultValue={parsedSettings.favicon}
+                helperText="Formato ICO ou PNG 32x32"
+              />
             </div>
           </div>
 
