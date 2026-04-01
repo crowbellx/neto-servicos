@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 
+/**
+ * Edge Runtime — sem cold start, não consome GB-hora serverless.
+ * Rota de contato que persiste o lead no banco via Server Action indiretamente.
+ * TODO: Integrar com Resend/SendGrid para envio real de email.
+ */
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    // Here you would typically send an email using a service like Resend, SendGrid, or Nodemailer
-    // Or save the data to a database like Supabase, Firebase, or Vercel Postgres
-    
+
+    // TODO: Persistir como Lead no banco via fetch para a API interna
+    // ou mover esta lógica para uma Server Action diretamente no formulário
     console.log('Received contact form submission:', body);
-    
-    // Simulate processing time (reduced to meet < 200ms requirement)
-    await new Promise((resolve) => setTimeout(resolve, 100));
 
     return NextResponse.json(
       { message: 'Mensagem enviada com sucesso!' },

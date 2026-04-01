@@ -49,11 +49,14 @@ export default function ImageUploadDropzone({
           }
 
           // 2. Upload DIRETO do Browser para o Supabase (PUT)
+          // cacheControl: 1 ano — arquivo tem UUID, nunca colide; CDN serve sem re-fetch
           const uploadRes = await fetch(res.signedUrl, {
             method: 'PUT',
             body: file,
             headers: {
               'Content-Type': file.type,
+              'x-upsert': 'false',
+              'cache-control': 'max-age=31536000',
             },
           });
 

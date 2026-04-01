@@ -33,13 +33,26 @@ export const getCachedSettings = (key: string) =>
   )();
 
 // --- BLOG ---
+// 🟢 select explícito: não busca `content` (HTML completo) nem `versions` na listagem
 export const getCachedPublishedPosts = unstable_cache(
   async () => {
     try {
       return await prisma.post.findMany({
         where: { status: 'PUBLISHED', deletedAt: null },
         orderBy: { publishedAt: 'desc' },
-        include: { author: { select: { name: true, avatar: true } } }
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          coverImage: true,
+          category: true,
+          tags: true,
+          publishedAt: true,
+          readTime: true,
+          views: true,
+          author: { select: { name: true, avatar: true } },
+        },
       });
     } catch (error) {
       console.error(`[Fetch Posts] Error:`, error);
@@ -68,12 +81,24 @@ export const getCachedPostBySlug = (slug: string) =>
   )();
 
 // --- PORTFOLIO ---
+// 🟢 select explícito: não busca `content` (JSON detalhado) na listagem de cards
 export const getCachedPublishedProjects = unstable_cache(
   async () => {
     try {
       return await prisma.project.findMany({
         where: { status: 'PUBLISHED', deletedAt: null },
-        orderBy: { order: 'asc' }
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          images: true,
+          category: true,
+          tags: true,
+          featured: true,
+          order: true,
+        },
       });
     } catch (error) {
       console.error(`[Fetch Projects] Error:`, error);
