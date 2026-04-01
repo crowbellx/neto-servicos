@@ -30,20 +30,23 @@ export default function ImageUploadField({
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log(`[Upload] Starting upload for: ${file.name} (${file.type || 'unknown type'})`);
       const result = await uploadSettingsImage(formData);
 
       if (result.success && result.url) {
         setUrl(result.url);
       } else {
         const errorMsg = result.error || 'Erro desconhecido durante o upload.';
-        console.error('Server upload failed:', errorMsg);
-        alert(`Erro ao fazer upload da imagem: ${errorMsg}`);
+        console.error('[Upload] Server rejection:', errorMsg);
+        alert(`Erro ao fazer upload: ${errorMsg}`);
       }
-    } catch (error) {
-      console.error('Unexpected error uploading image:', error);
-      alert('Ocorreu um erro inesperado ao fazer upload da imagem. Por favor, tente novamente.');
+    } catch (error: any) {
+      console.error('[Upload] Client-side exception:', error);
+      const detail = error?.message || JSON.stringify(error);
+      alert(`Ocorreu um erro inesperado ao fazer upload da imagem.\n\nDetalhes: ${detail}`);
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
