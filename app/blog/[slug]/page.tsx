@@ -36,15 +36,26 @@ function parseTags(tagsJson: string): string[] {
   }
 }
 
+function parseImages(raw: string | undefined | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = await getCachedPostBySlug(slug);
+  const post = await getCachedPostBySlug(slug) as any;
 
   if (!post) {
     notFound();
   }
 
   const tags = parseTags(post.tags);
+  const galleryImages = parseImages(post.images);
   const published = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('pt-BR') : null;
 
   return (
@@ -107,6 +118,29 @@ export default async function BlogPostPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </div>
+
+      {/* Galeria de Imagens do Post */}
+      {galleryImages.length > 0 && (
+        <div className="container-custom max-w-4xl mt-16">
+          <h2 className="text-2xl font-titulo font-bold text-grafite mb-8 flex items-center gap-3">
+            <span className="w-8 h-1 bg-laranja rounded-full" />
+            Galeria do Artigo
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {galleryImages.map((img, idx) => (
+              <div key={idx} className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-md group border border-black/5">
+                <Image
+                  src={img}
+                  alt={`${post.title} gallery ${idx}`}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 33vw"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="container-custom max-w-3xl mt-12 pt-8 border-t border-black/5">
         <Link href="/blog" className="text-laranja font-medium hover:underline">

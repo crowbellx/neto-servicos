@@ -111,7 +111,15 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
             <input {...register('title')} placeholder="Título" className="w-full text-3xl font-bold text-gray-900 border-none focus:ring-0 p-0" />
             <textarea {...register('description')} placeholder="Resumo" className="w-full border border-gray-200 rounded-lg p-3 text-sm" />
             <Controller name="content" control={control} render={({ field }) => <TipTapEditor value={field.value} onChange={field.onChange} />} />
-            <Controller name="images" control={control} render={({ field }) => <ImageUploadDropzone value={field.value} onChange={(val) => field.onChange(Array.isArray(val) ? val : [val])} multiple={true} folder="portfolio" />} />
+            <Controller name="images" control={control} render={({ field }) => (
+              <ImageUploadDropzone 
+                value={field.value} 
+                onChange={(val) => field.onChange(Array.isArray(val) ? val : [val])} 
+                multiple={true} 
+                maxFiles={10}
+                folder="portfolio" 
+              />
+            )} />
           </div>
         </div>
         <div className="w-80 flex-shrink-0 flex flex-col gap-6 sticky top-6">

@@ -17,12 +17,13 @@ const postSchema = z.object({
   excerpt: z.string().max(300, 'Resumo deve ter até 300 caracteres'),
   content: z.string().min(10, 'Conteúdo é obrigatório'),
   category: z.string().min(1, 'Categoria é obrigatória'),
-  tags: z.string(), // comma separated
+  tags: z.string(), 
   status: z.enum(['DRAFT', 'PUBLISHED', 'SCHEDULED']),
-  coverImage: z.string().optional(),
-  seoTitle: z.string().max(60, 'Recomendado até 60 caracteres').optional(),
-  seoDesc: z.string().max(160, 'Recomendado até 160 caracteres').optional(),
-  focusKw: z.string().optional(),
+  coverImage: z.string(),
+  images: z.array(z.string()),
+  seoTitle: z.string().max(60, 'Recomendado até 60 caracteres'),
+  seoDesc: z.string().max(160, 'Recomendado até 160 caracteres'),
+  focusKw: z.string(),
 });
 
 export type PostFormValues = z.infer<typeof postSchema>;
@@ -42,6 +43,16 @@ function tagsToFormValue(raw: string | undefined): string {
   return raw;
 }
 
+function parseImages(raw: string | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function PostForm({ initialData }: PostFormProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -56,6 +67,7 @@ export default function PostForm({ initialData }: PostFormProps) {
       tags: tagsToFormValue(initialData?.tags),
       status: initialData?.status || 'DRAFT',
       coverImage: initialData?.coverImage || '',
+      images: parseImages(initialData?.images),
       seoTitle: initialData?.seoTitle || '',
       seoDesc: initialData?.seoDesc || '',
       focusKw: initialData?.focusKw || '',
@@ -68,8 +80,12 @@ export default function PostForm({ initialData }: PostFormProps) {
     setIsSaving(true);
     try {
       const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (value) formData.append(key, value);
+      (Object.entries(data) as [string, any][]).forEach(([key, value]) => {
+        if (key === 'images') {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
       });
 
       let res;
@@ -233,20 +249,44 @@ export default function PostForm({ initialData }: PostFormProps) {
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
             <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Mídia</h3>
             
-            <div>
-               <label className="block text-sm font-medium text-gray-700 mb-2">Imagem de Capa</label>
-               <Controller
-                 name="coverImage"
-                 control={control}
-                 render={({ field }) => (
-                   <ImageUploadDropzone 
-                     value={field.value} 
-                     onChange={(val) => field.onChange(val as string)} 
-                     multiple={false}
-                     folder="blog"
-                   />
-                 )}
-               />
+            <div className="space-y-6">
+              <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">Imagem de Capa</label>
+                 <Controller
+                   name="coverImage"
+                   control={control}
+                   render={({ field }) => (
+                     <ImageUploadDropzone 
+                       value={field.value} 
+                       onChange={(val) => field.onChange(val as string)} 
+                       multiple={false}
+                       folder="blog"
+                       label="Selecionar capa"
+                     />
+                   )}
+                 />
+              </div>
+
+              <div className="pt-4 border-t border-gray-50">
+                 <label className="block text-sm font-medium text-gray-700 mb-2">Galeria de Imagens (Até 10)</label>
+                 <Controller
+                   name="images"
+                   control={control}
+                   render={({ field }) => (
+                     <ImageUploadDropzone 
+                       value={field.value} 
+                       onChange={(val) => field.onChange(val as string[])} 
+                       multiple={true}
+                       maxFiles={10}
+                       folder="blog/gallery"
+                       label="Adicionar à galeria"
+                     />
+                   )}
+                 />
+                 <p className="text-[11px] text-gray-400 mt-2">
+                   Estas imagens serão exibidas como uma galeria no final do post.
+                 </p>
+              </div>
             </div>
           </div>
 

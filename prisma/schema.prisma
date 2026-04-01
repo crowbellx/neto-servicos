@@ -115,6 +115,7 @@ model Post {
   excerpt     String
   content     String   // JSON string
   coverImage  String?
+  images      String   @default("[]") // JSON string array for gallery
   category    String
   tags        String   // JSON string array
   author      User     @relation(fields: [authorId], references: [id])

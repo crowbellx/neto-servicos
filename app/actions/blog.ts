@@ -119,6 +119,7 @@ export async function createPost(formData: FormData) {
     const tags = normalizeTagsInput(formData.get('tags') as string);
     const status = formData.get('status') as string || 'DRAFT';
     const coverImage = formData.get('coverImage') as string;
+    const images = formData.get('images') as string || '[]';
     
     const seoTitle = formData.get('seoTitle') as string || null;
     const seoDesc = formData.get('seoDesc') as string || null;
@@ -137,6 +138,7 @@ export async function createPost(formData: FormData) {
         tags,
         status,
         coverImage,
+        images,
         seoTitle,
         seoDesc,
         focusKw,
@@ -171,6 +173,7 @@ export async function updatePost(id: string, formData: FormData) {
     const tags = normalizeTagsInput(formData.get('tags') as string);
     const status = formData.get('status') as string || 'DRAFT';
     const coverImage = formData.get('coverImage') as string;
+    const images = formData.get('images') as string || '[]';
     
     const seoTitle = formData.get('seoTitle') as string || null;
     const seoDesc = formData.get('seoDesc') as string || null;
@@ -192,6 +195,7 @@ export async function updatePost(id: string, formData: FormData) {
         tags,
         status,
         coverImage,
+        images,
         seoTitle,
         seoDesc,
         focusKw,
