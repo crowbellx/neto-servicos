@@ -9,9 +9,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  serverActions: {
-    bodySizeLimit: '10mb',
-  },
+
   serverExternalPackages: ['@prisma/client'],
   eslint: {
     ignoreDuringBuilds: true,

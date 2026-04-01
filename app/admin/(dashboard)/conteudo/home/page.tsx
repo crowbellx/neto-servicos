@@ -1,4 +1,4 @@
-'use server';
+
 
 import HomeContentEditor from '@/components/admin/content/HomeContentEditor';
 import { getHomeSections } from '@/app/actions/settings';
