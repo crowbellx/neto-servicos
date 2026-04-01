@@ -5,12 +5,14 @@ import { Save, Building2, Upload, Phone, Mail, MapPin, Loader2 } from 'lucide-re
 import { toast } from 'sonner';
 import { updateSettings } from '@/app/actions/settings';
 import ImageUploadField from './ImageUploadField';
+import LeadCleanupSettings from './LeadCleanupSettings';
 
 interface GeneralSettingsFormProps {
   settings: any;
+  leadCleanupConfig?: any;
 }
 
-export default function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
+export default function GeneralSettingsForm({ settings, leadCleanupConfig = {} }: GeneralSettingsFormProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = async (formData: FormData) => {
@@ -223,6 +225,10 @@ export default function GeneralSettingsForm({ settings }: GeneralSettingsFormPro
               </div>
             </div>
           </div>
+
+
+          {/* Limpeza de Leads */}
+          <LeadCleanupSettings initialConfig={leadCleanupConfig} />
 
         </div>
       </div>

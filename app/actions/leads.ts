@@ -180,3 +180,106 @@ export async function bulkArchiveLeads(leadIds: string[]) {
     return { success: false, error: 'Falha ao arquivar leads em lote' };
   }
 }
+
+/**
+ * Retorna quantos leads LOST seriam excluídos permanentemente
+ * com base na configuração de retenção atual (dry-run / pré-visualização).
+ */
+export async function getLeadsCleanupPreview() {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'lead_cleanup' } });
+    const config = setting?.data ? JSON.parse(setting.data) : {};
+    const retentionDays: number = Number(config.retentionDays ?? 30);
+    const enabled: boolean = config.enabled ?? false;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+    const count = await prisma.lead.count({
+      where: {
+        status: 'LOST',
+        updatedAt: { lt: cutoffDate },
+      },
+    });
+
+    return { success: true, data: { count, retentionDays, enabled, cutoffDate } };
+  } catch (error) {
+    console.error('Error previewing leads cleanup:', error);
+    return { success: false, error: 'Falha ao pré-visualizar limpeza de leads' };
+  }
+}
+
+/**
+ * Exclui permanentemente (hard delete) leads com status LOST
+ * cujo updatedAt seja mais antigo que o período de retenção configurado.
+ * Também exclui Notes e Interactions relacionadas via cascata.
+ */
+export async function purgeOldLeads() {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'lead_cleanup' } });
+    const config = setting?.data ? JSON.parse(setting.data) : {};
+    const retentionDays: number = Number(config.retentionDays ?? 30);
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+    // Busca IDs dos leads elegíveis
+    const eligibleLeads = await prisma.lead.findMany({
+      where: {
+        status: 'LOST',
+        updatedAt: { lt: cutoffDate },
+      },
+      select: { id: true },
+    });
+
+    if (eligibleLeads.length === 0) {
+      return { success: true, data: { deleted: 0 } };
+    }
+
+    const ids = eligibleLeads.map((l) => l.id);
+
+    // Remove dependências primeiro (Notes e Interactions)
+    await prisma.note.deleteMany({ where: { leadId: { in: ids } } });
+    await prisma.interaction.deleteMany({ where: { leadId: { in: ids } } });
+
+    // Hard delete dos leads
+    const { count } = await prisma.lead.deleteMany({ where: { id: { in: ids } } });
+
+    // Salva timestamp da última limpeza
+    await prisma.setting.upsert({
+      where: { key: 'lead_cleanup' },
+      update: { data: JSON.stringify({ ...config, lastPurgeAt: new Date().toISOString(), lastPurgeCount: count }) },
+      create: { key: 'lead_cleanup', data: JSON.stringify({ retentionDays, enabled: config.enabled ?? false, lastPurgeAt: new Date().toISOString(), lastPurgeCount: count }) },
+    });
+
+    revalidatePath('/admin/leads');
+    revalidatePath('/admin');
+    revalidatePath('/admin/configuracoes/geral');
+    return { success: true, data: { deleted: count } };
+  } catch (error) {
+    console.error('Error purging old leads:', error);
+    return { success: false, error: 'Falha ao excluir leads permanentemente' };
+  }
+}
+
+/**
+ * Atualiza a configuração de retenção de leads.
+ */
+export async function updateLeadCleanupSettings(retentionDays: number, enabled: boolean) {
+  try {
+    const existing = await prisma.setting.findUnique({ where: { key: 'lead_cleanup' } });
+    const prev = existing?.data ? JSON.parse(existing.data) : {};
+
+    await prisma.setting.upsert({
+      where: { key: 'lead_cleanup' },
+      update: { data: JSON.stringify({ ...prev, retentionDays, enabled }) },
+      create: { key: 'lead_cleanup', data: JSON.stringify({ retentionDays, enabled }) },
+    });
+
+    revalidatePath('/admin/configuracoes/geral');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating lead cleanup settings:', error);
+    return { success: false, error: 'Falha ao salvar configuração de limpeza' };
+  }
+}
