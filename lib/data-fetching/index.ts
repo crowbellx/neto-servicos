@@ -124,3 +124,53 @@ export const getCachedProjectBySlug = (slug: string) =>
     [`project-${slug}`],
     { tags: [TAGS.PORTFOLIO, `project-${slug}`], revalidate: 3600 }
   )();
+
+// --- HOME SECTIONS (seções com conteúdo editável) ---
+const HOME_SECTION_KEYS = [
+  'home_hero',
+  'home_counters',
+  'home_diferenciais',
+  'home_cta',
+  'home_processo',
+  'contato_info',
+] as const;
+
+type HomeSections = {
+  hero: Record<string, any> | null;
+  counters: Record<string, any> | null;
+  diferenciais: Record<string, any> | null;
+  cta: Record<string, any> | null;
+  processo: Record<string, any> | null;
+  contato: Record<string, any> | null;
+};
+
+/**
+ * Busca todas as seções da Home em uma única query.
+ * Cache de 1h — invalidado via revalidateTag('home-content') ao salvar no admin.
+ * Alinhado com o free tier: nunca faz mais de 1 round-trip para a Home.
+ */
+export const getCachedHomeContent = unstable_cache(
+  async (): Promise<HomeSections> => {
+    try {
+      const rows = await prisma.setting.findMany({
+        where: { key: { in: [...HOME_SECTION_KEYS] } },
+        select: { key: true, data: true },
+      });
+      const map = new Map(rows.map((r) => [r.key, r.data ? JSON.parse(r.data) : null]));
+      return {
+        hero:         map.get('home_hero')         ?? null,
+        counters:     map.get('home_counters')     ?? null,
+        diferenciais: map.get('home_diferenciais') ?? null,
+        cta:          map.get('home_cta')           ?? null,
+        processo:     map.get('home_processo')     ?? null,
+        contato:      map.get('contato_info')       ?? null,
+      };
+    } catch (error) {
+      console.error('[Fetch HomeContent] Error:', error);
+      return { hero: null, counters: null, diferenciais: null, cta: null, processo: null, contato: null };
+    }
+  },
+  ['home-content-v1'],
+  { tags: ['home-content'], revalidate: 3600 }
+);
+

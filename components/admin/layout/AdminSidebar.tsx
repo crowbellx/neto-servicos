@@ -18,7 +18,9 @@ import {
   Image as ImageIcon, 
   MenuSquare,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Globe,
+  PenSquare,
 } from 'lucide-react';
 import { hasRequiredRole } from '@/lib/auth/rbac';
 
@@ -39,12 +41,19 @@ const navItems: Array<{ title: string; items: NavItem[] }> = [
     ]
   },
   {
+    title: 'Conteúdo do Site',
+    items: [
+      { name: 'Página Inicial', href: '/admin/conteudo/home', icon: Globe, minRole: 'EDITOR' as const },
+      { name: 'Páginas Fixas', href: '/admin/paginas', icon: PenSquare, minRole: 'EDITOR' as const },
+    ]
+  },
+  {
     title: 'Conteúdo',
     items: [
-      { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase, minRole: 'EDITOR' },
-      { name: 'Blog', href: '/admin/blog', icon: FileText, minRole: 'EDITOR' },
-      { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare, minRole: 'EDITOR' },
-      { name: 'Equipe', href: '/admin/equipe', icon: Users, minRole: 'ADMIN' },
+      { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase, minRole: 'EDITOR' as const },
+      { name: 'Blog', href: '/admin/blog', icon: FileText, minRole: 'EDITOR' as const },
+      { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare, minRole: 'EDITOR' as const },
+      { name: 'Equipe', href: '/admin/equipe', icon: Users, minRole: 'ADMIN' as const },
     ]
   },
   {
@@ -58,10 +67,9 @@ const navItems: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Site',
     items: [
-      { name: 'Páginas', href: '/admin/paginas', icon: Files, minRole: 'VIEWER' },
-      { name: 'Serviços', href: '/admin/servicos', icon: Settings, minRole: 'VIEWER' },
-      { name: 'Mídia', href: '/admin/midia', icon: ImageIcon, minRole: 'EDITOR' },
-      { name: 'Menus', href: '/admin/menus', icon: MenuSquare, minRole: 'ADMIN' },
+      { name: 'Serviços', href: '/admin/servicos', icon: Settings, minRole: 'VIEWER' as const },
+      { name: 'Mídia', href: '/admin/midia', icon: ImageIcon, minRole: 'EDITOR' as const },
+      { name: 'Menus', href: '/admin/menus', icon: MenuSquare, minRole: 'ADMIN' as const },
     ]
   },
   {

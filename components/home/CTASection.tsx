@@ -4,7 +4,18 @@ import { motion } from 'motion/react';
 import Link from 'next/link';
 import { MessageCircle, Mail } from 'lucide-react';
 
-export default function CTASection() {
+const DEFAULTS = {
+  title: 'Pronto para levar sua marca ao próximo nível?',
+  subtitle: 'Fale com a gente hoje. Orçamento gratuito e sem compromisso.',
+  whatsappLink: 'https://wa.me/5511999999999?text=Olá!%20Vim%20pelo%20site%20e%20gostaria%20de%20um%20orçamento.',
+  whatsappLabel: 'Solicitar Orçamento pelo WhatsApp',
+};
+
+type CTAData = typeof DEFAULTS;
+
+export default function CTASection({ data }: { data?: Partial<CTAData> | null }) {
+  const d = { ...DEFAULTS, ...data };
+
   return (
     <section id="cta" className="relative py-24 lg:py-32 overflow-hidden">
       {/* Background with Gradient Overlay */}
@@ -19,7 +30,7 @@ export default function CTASection() {
           viewport={{ once: true }}
           className="text-4xl lg:text-6xl font-titulo font-extrabold text-white mb-6 leading-tight"
         >
-          Pronto para levar sua marca ao próximo nível?
+          {d.title}
         </motion.h2>
 
         <motion.p
@@ -29,7 +40,7 @@ export default function CTASection() {
           transition={{ delay: 0.1 }}
           className="text-xl text-t-white-70 mb-12 max-w-2xl mx-auto leading-relaxed"
         >
-          Fale com a gente hoje. Orçamento gratuito e sem compromisso.
+          {d.subtitle}
         </motion.p>
 
         <motion.div
@@ -40,13 +51,13 @@ export default function CTASection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-6"
         >
           <a
-            href="https://wa.me/5511999999999?text=Olá!%20Vim%20pelo%20site%20e%20gostaria%20de%20um%20orçamento."
+            href={d.whatsappLink}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 bg-white text-grafite px-8 py-4 rounded-full font-bold text-lg hover:bg-white/90 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto justify-center shadow-lg"
           >
             <MessageCircle size={24} className="text-[#25D366]" />
-            Solicitar Orçamento pelo WhatsApp
+            {d.whatsappLabel}
           </a>
 
           <Link

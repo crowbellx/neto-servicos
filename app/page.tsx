@@ -10,6 +10,7 @@ import ContatoSection from '@/components/contato/ContatoSection';
 import { 
   getCachedPublishedProjects, 
   getCachedPublishedPosts,
+  getCachedHomeContent,
   TAGS
 } from '@/lib/data-fetching';
 import { prisma } from '@/lib/prisma';
@@ -17,7 +18,6 @@ import { unstable_cache } from 'next/cache';
 
 export const revalidate = 3600;
 
-// Adding specific home-view caches
 const getCachedTestimonials = unstable_cache(
   async () => prisma.testimonial.findMany({ 
     where: { active: true }, 
@@ -29,44 +29,34 @@ const getCachedTestimonials = unstable_cache(
 );
 
 const getCachedServices = unstable_cache(
-  async () => prisma.service.findMany({ where: { status: 'ACTIVE' }, orderBy: { order: 'asc' } }),
+  async () => prisma.service.findMany({ 
+    where: { status: 'ACTIVE' }, 
+    orderBy: { order: 'asc' } 
+  }),
   ['home-services'],
   { tags: [TAGS.SERVICES], revalidate: 3600 }
 );
 
-const getCachedHomePageData = unstable_cache(
-  async () => prisma.page.findFirst({ where: { slug: '/', status: 'PUBLISHED' } }),
-  ['home-page-data'],
-  { tags: ['pages'], revalidate: 3600 }
-);
-
 export default async function Home() {
-  const [projects, testimonials, services, pageData] = await Promise.all([
+  // Busca todos os dados em paralelo — single round-trip conceitual, cacheado 1h
+  const [projects, testimonials, services, homeContent] = await Promise.all([
     getCachedPublishedProjects(),
     getCachedTestimonials(),
     getCachedServices(),
-    getCachedHomePageData()
+    getCachedHomeContent(),   // ← seções editáveis via admin
   ]);
 
   return (
     <>
-      <HeroSection />
-      <CountersSection />
-      
-      {/* Se houver conteúdo customizado para a Home no Admin, renderiza aqui */}
-      {pageData?.content && (
-        <section className="py-16 bg-white">
-          <div className="container-custom prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: pageData.content }} />
-        </section>
-      )}
-
+      <HeroSection data={homeContent.hero} />
+      <CountersSection data={homeContent.counters} />
       <ServicosSection initialServices={services} />
-      <ProcessoSection />
+      <ProcessoSection data={homeContent.processo} />
       <PortfolioPreview initialProjects={projects} />
       <DepoimentosSection initialTestimonials={testimonials} />
-      <DiferenciaisSection />
-      <CTASection />
-      <ContatoSection />
+      <DiferenciaisSection data={homeContent.diferenciais} />
+      <CTASection data={homeContent.cta} />
+      <ContatoSection data={homeContent.contato} />
     </>
   );
 }

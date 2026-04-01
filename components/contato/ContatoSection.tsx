@@ -4,12 +4,30 @@ import { motion } from 'motion/react';
 import { MessageCircle, Mail, MapPin, Clock } from 'lucide-react';
 import FormContato from './FormContato';
 
-export default function ContatoSection() {
+type ContatoData = {
+  whatsapp?: string;
+  email?: string;
+  address?: string;
+  hours?: string;
+  mapLink?: string;
+} | null;
+
+const DEFAULTS = {
+  whatsapp: '(11) 99999-9999',
+  email: 'contato@netoservicos.com.br',
+  address: 'Rua Exemplo, 123 - Centro',
+  hours: 'Seg–Sex 8h–18h | Sáb 8h–12h',
+  mapLink: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.197368558778!2d-46.65888892466981!3d-23.56133746158529!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%20-%20Bela%20Vista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1710000000000!5m2!1spt-BR!2sbr',
+};
+
+export default function ContatoSection({ data }: { data?: ContatoData }) {
+  const d = { ...DEFAULTS, ...data };
+
   const contactCards = [
     {
       icon: MessageCircle,
       title: 'WhatsApp',
-      info: '(11) 99999-9999',
+      info: d.whatsapp,
       desc: 'Respondemos em até 1h',
       color: 'text-[#25D366]',
       hoverBorder: 'hover:border-l-[#25D366]',
@@ -17,7 +35,7 @@ export default function ContatoSection() {
     {
       icon: Mail,
       title: 'E-mail',
-      info: 'contato@netoservicos.com.br',
+      info: d.email,
       desc: 'Respondemos em até 24h',
       color: 'text-laranja',
       hoverBorder: 'hover:border-l-laranja',
@@ -25,7 +43,7 @@ export default function ContatoSection() {
     {
       icon: MapPin,
       title: 'Endereço',
-      info: 'Rua Exemplo, 123 - Centro',
+      info: d.address,
       desc: 'Atendimento presencial com hora marcada',
       color: 'text-roxo',
       hoverBorder: 'hover:border-l-roxo',
@@ -33,8 +51,8 @@ export default function ContatoSection() {
     {
       icon: Clock,
       title: 'Horário',
-      info: 'Seg–Sex 8h–18h',
-      desc: 'Sáb 8h–12h',
+      info: d.hours?.split('|')[0]?.trim() || d.hours,
+      desc: d.hours?.split('|')[1]?.trim() || '',
       color: 'text-azul',
       hoverBorder: 'hover:border-l-azul',
     },
@@ -78,7 +96,7 @@ export default function ContatoSection() {
           {/* Map Embed */}
           <div className="rounded-2xl overflow-hidden shadow-sm border border-black/5 h-[240px] relative bg-grafite-soft/10">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.197368558778!2d-46.65888892466981!3d-23.56133746158529!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%20-%20Bela%20Vista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1710000000000!5m2!1spt-BR!2sbr"
+              src={d.mapLink}
               width="100%"
               height="100%"
               style={{ border: 0 }}
@@ -86,7 +104,7 @@ export default function ContatoSection() {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Localização"
-            ></iframe>
+            />
           </div>
         </motion.div>
 

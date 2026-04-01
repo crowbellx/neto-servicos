@@ -30,12 +30,10 @@ export async function getPageById(id: string) {
 
 export async function createPage(data: any) {
   try {
-    const page = await prisma.page.create({
-      data: {
-        ...data,
-      },
-    });
+    const page = await prisma.page.create({ data });
     revalidatePath('/admin/paginas');
+    // Invalida a página pública correspondente ao slug
+    if (page.slug) revalidatePath(`/${page.slug === '/' ? '' : page.slug}`);
     return { success: true, data: page };
   } catch (error) {
     console.error('Error creating page:', error);
@@ -45,14 +43,13 @@ export async function createPage(data: any) {
 
 export async function updatePage(id: string, data: any) {
   try {
-    const page = await prisma.page.update({
-      where: { id },
-      data: {
-        ...data,
-      },
-    });
+    const page = await prisma.page.update({ where: { id }, data });
     revalidatePath('/admin/paginas');
     revalidatePath(`/admin/paginas/${id}`);
+    // Invalida a página pública correspondente — alteraçtions refletem imediatamente
+    if (page.slug) revalidatePath(`/${page.slug === '/' ? '' : page.slug}`);
+    // Casos especiais: home tem slug '/'
+    if (page.slug === 'home' || page.slug === '/') revalidatePath('/');
     return { success: true, data: page };
   } catch (error) {
     console.error('Error updating page:', error);
