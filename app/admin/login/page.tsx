@@ -7,6 +7,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `Login Administrativo | ${general.companyName || 'Neto Serviços'}`,
     description: (seo.metaDescription as string) || 'Acesso restrito à área administrativa.',
+    icons: {
+      icon: (general.favicon as string) || '/favicon.ico',
+      apple: (general.favicon as string) || '/favicon.ico',
+    },
   };
 }
 

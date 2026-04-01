@@ -4,6 +4,23 @@ import AdminSidebar from '@/components/admin/layout/AdminSidebar';
 import AdminTopbar from '@/components/admin/layout/AdminTopbar';
 import { prisma } from '@/lib/prisma';
 import { Toaster } from 'sonner';
+import { getCachedPublicSettingsBundle } from '@/lib/cache/settings';
+import type { Metadata } from 'next';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { general } = await getCachedPublicSettingsBundle();
+  return {
+    title: {
+      template: `%s | Painel ${general.companyName || 'Neto Serviços'}`,
+      default: `Dashboard | Painel ${general.companyName || 'Neto Serviços'}`,
+    },
+    icons: {
+      icon: (general.favicon as string) || '/favicon.ico',
+      apple: (general.favicon as string) || '/favicon.ico',
+    },
+  };
+}
+
 
 // Importante para garantir que a sessão seja verificada em tempo real em cada navegação
 export const dynamic = 'force-dynamic';
