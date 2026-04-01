@@ -19,7 +19,7 @@ const playfair = Playfair_Display({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { seo } = await getCachedPublicSettingsBundle();
+  const { seo, general } = await getCachedPublicSettingsBundle();
 
   return {
     title: (seo.metaTitle as string) || 'Neto Serviços e Soluções | Gráfica, Design e Desenvolvimento Digital',
@@ -38,6 +38,10 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: {
       index: seo.allowIndexing !== false,
       follow: seo.allowIndexing !== false,
+    },
+    icons: {
+      icon: (general.favicon as string) || '/favicon.ico',
+      apple: (general.favicon as string) || '/favicon.ico',
     },
   };
 }

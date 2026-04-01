@@ -1,23 +1,17 @@
+import { getCachedPublicSettingsBundle } from '@/lib/cache/settings';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
-import { Printer, MousePointerClick, Monitor, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Printer, MousePointerClick, Monitor, ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const page = await prisma.page.findFirst({ where: { slug: 'servicos', status: 'PUBLISHED' } });
-    return {
-      title: page?.seoTitle || 'Serviços | Neto Serviços',
-      description: page?.seoDesc || 'Conheça nossas especialidades em Gráfica, Design e Digital.',
-    };
-  } catch (error) {
-    return {
-      title: 'Serviços | Neto Serviços',
-      description: 'Conheça nossas especialidades em Gráfica, Design e Digital.',
-    };
-  }
+  const { seo, services } = await getCachedPublicSettingsBundle();
+  return {
+    title: (seo.metaTitle as string) || services?.header?.title || 'Serviços | Neto Serviços',
+    description: (seo.metaDescription as string) || services?.header?.subtitle || 'Conheça nossas especialidades em Gráfica, Design e Digital.',
+  };
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -33,24 +27,22 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export default async function ServicosPage() {
+  const { services: pageContent } = await getCachedPublicSettingsBundle();
+  
   let dbServices: any[] = [];
-  let pageData: any = null;
-
   try {
-    const [fetchedServices, fetchedPageData] = await Promise.all([
-      prisma.service.findMany({
-        where: { status: 'ACTIVE' },
-        orderBy: { order: 'asc' }
-      }),
-      prisma.page.findFirst({
-        where: { slug: 'servicos', status: 'PUBLISHED' }
-      })
-    ]);
-    dbServices = fetchedServices;
-    pageData = fetchedPageData;
+    dbServices = await prisma.service.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: { order: 'asc' }
+    });
   } catch (error) {
-    console.error('[Build] Erro ao buscar dados de Serviços:', error);
+    console.error('[Build] Erro ao buscar serviços:', error);
   }
+
+  const header = pageContent?.header || { 
+    title: 'Nossas Especialidades', 
+    subtitle: 'Do físico ao digital, cuidamos de cada detalhe da sua marca com excelência técnica e visão estratégica.' 
+  };
 
   return (
     <div className="bg-branco min-h-screen">
@@ -58,10 +50,10 @@ export default async function ServicosPage() {
         <div className="absolute inset-0 bg-g-marca opacity-20 mix-blend-overlay" />
         <div className="container-custom relative z-10 text-center">
           <h1 className="text-5xl lg:text-7xl font-titulo font-bold mb-8 leading-tight">
-            {pageData?.title || 'Nossas Especialidades'}
+            {header.title}
           </h1>
           <p className="text-xl text-t-white-70 max-w-2xl mx-auto leading-relaxed">
-            {pageData?.seoDesc || 'Do físico ao digital, cuidamos de cada detalhe da sua marca com excelência técnica e visão estratégica.'}
+            {header.subtitle}
           </p>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Instagram, Linkedin, MessageCircle, Dribbble, MapPin, Phone, Mail } from 'lucide-react';
+import Image from 'next/image';
+import { Instagram, Linkedin, MessageCircle, MapPin, Phone, Mail } from 'lucide-react';
 
 interface FooterProps {
   general?: any;
@@ -19,11 +20,22 @@ export default function Footer({ general = {} }: FooterProps) {
       <div className="container-custom relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-8 mb-16">
           <div className="flex flex-col gap-6">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-g-marca flex items-center justify-center text-white font-bold text-xl">
-                {companyName.charAt(0)}
-              </div>
-              <span className="font-titulo font-bold text-xl tracking-tight text-white">
+            <Link href="/" className="flex items-center gap-2 group">
+              {general.logo ? (
+                <div className="relative w-10 h-10">
+                  <Image
+                    src={general.logo}
+                    alt={companyName}
+                    fill
+                    className="object-contain transition-transform group-hover:scale-105"
+                  />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-g-marca flex items-center justify-center text-white font-bold text-xl">
+                  {companyName.charAt(0)}
+                </div>
+              )}
+              <span className="font-titulo font-bold text-xl tracking-tight text-white group-hover:text-laranja transition-colors">
                 {companyName}
               </span>
             </Link>

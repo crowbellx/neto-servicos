@@ -1,10 +1,24 @@
-'use client';
-
-import { motion } from 'motion/react';
+import { getCachedPublicSettingsBundle } from '@/lib/cache/settings';
 import Link from 'next/link';
 import ContatoSection from '@/components/contato/ContatoSection';
+import type { Metadata } from 'next';
 
-export default function ContatoPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  const { seo, contact } = await getCachedPublicSettingsBundle();
+  return {
+    title: (seo.metaTitle as string) || contact?.header?.title || 'Contato | Neto Serviços',
+    description: (seo.metaDescription as string) || contact?.header?.subtitle || 'Estamos prontos para ouvir sobre o seu projeto.',
+  };
+}
+
+export default async function ContatoPage() {
+  const { contact } = await getCachedPublicSettingsBundle();
+  
+  const header = contact?.header || { 
+    title: 'Fale Conosco', 
+    subtitle: 'Estamos prontos para ouvir sobre o seu projeto.' 
+  };
+
   return (
     <div className="bg-branco min-h-screen">
       {/* Hero */}
@@ -14,27 +28,18 @@ export default function ContatoPage() {
           <div className="text-sm text-t-white-70 mb-4 font-medium">
             <Link href="/" className="hover:text-white transition-colors">Início</Link> / Contato
           </div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl lg:text-6xl font-titulo font-bold mb-6"
-          >
-            Fale Conosco
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl text-t-white-70 max-w-2xl mx-auto"
-          >
-            Estamos prontos para ouvir sobre o seu projeto.
-          </motion.p>
+          <h1 className="text-5xl lg:text-6xl font-titulo font-bold mb-6">
+            {header.title}
+          </h1>
+          <p className="text-xl text-t-white-70 max-w-2xl mx-auto">
+            {header.subtitle}
+          </p>
         </div>
       </section>
 
       {/* Main Content */}
       <div className="py-16">
-        <ContatoSection />
+        <ContatoSection data={contact?.info} />
       </div>
     </div>
   );

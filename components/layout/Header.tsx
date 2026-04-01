@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { Printer, MousePointerClick, Monitor, List, X } from 'lucide-react';
 
@@ -75,11 +76,23 @@ export default function Header({ general = {} }: HeaderProps) {
       }`}
     >
       <div className="container-custom flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 z-50">
-          <div className="w-10 h-10 rounded-lg bg-g-marca flex items-center justify-center text-white font-bold text-xl">
-            {companyName.charAt(0)}
-          </div>
-          <span className="font-titulo font-bold text-xl tracking-tight text-t-primary">
+        <Link href="/" className="flex items-center gap-2 z-50 group">
+          {general.logo ? (
+            <div className="relative w-12 h-12">
+              <Image
+                src={general.logo}
+                alt={companyName}
+                fill
+                className="object-contain transition-transform group-hover:scale-105"
+                priority
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-g-marca flex items-center justify-center text-white font-bold text-xl">
+              {companyName.charAt(0)}
+            </div>
+          )}
+          <span className="font-titulo font-bold text-xl tracking-tight text-t-primary group-hover:text-laranja transition-colors">
             {companyName}
           </span>
         </Link>

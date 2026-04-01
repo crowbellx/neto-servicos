@@ -121,3 +121,46 @@ export async function updateSiteConfig(data: any) {
     return { success: false, error: 'Failed to update site config' };
   }
 }
+
+/**
+ * Busca múltiplas chaves de configuração de uma vez.
+ * Usado para carregar dados de editores de conteúdo de páginas específicas.
+ */
+export async function getSectionSettings(keys: string[]) {
+  try {
+    const rows = await prisma.setting.findMany({
+      where: { key: { in: keys } },
+      select: { key: true, data: true },
+    });
+    const map = new Map(rows.map((r) => [r.key, r.data ? JSON.parse(r.data) : null]));
+    return { success: true, data: Object.fromEntries(map) };
+  } catch (error) {
+    console.error('Error fetching section settings:', error);
+    return { success: false, error: 'Falha ao buscar configurações das seções' };
+  }
+}
+
+/**
+ * Atualiza uma seção de conteúdo e invalida os caches necessários.
+ */
+export async function updateContentSection(key: string, data: any, pathsToRevalidate: string[] = ['/']) {
+  try {
+    await prisma.setting.upsert({
+      where: { key },
+      update: { data: JSON.stringify(data) },
+      create: { key, data: JSON.stringify(data) },
+    });
+    
+    // Invalida caminhos específicos
+    pathsToRevalidate.forEach(path => revalidatePath(path));
+    
+    // Invalida tags globais
+    revalidateTag(SETTINGS_CACHE_TAG);
+    revalidateTag('home-content'); // Mantenha compatibilidade com o cache da home
+    
+    return { success: true };
+  } catch (error) {
+    console.error(`Error updating content section ${key}:`, error);
+    return { success: false, error: 'Falha ao salvar conteúdo' };
+  }
+}

@@ -44,6 +44,10 @@ const navItems: Array<{ title: string; items: NavItem[] }> = [
     title: 'Conteúdo do Site',
     items: [
       { name: 'Página Inicial', href: '/admin/conteudo/home', icon: Globe, minRole: 'EDITOR' as const },
+      { name: 'Sobre Nós', href: '/admin/conteudo/sobre', icon: PenSquare, minRole: 'EDITOR' as const },
+      { name: 'Serviços (Intro)', href: '/admin/conteudo/servicos', icon: PenSquare, minRole: 'EDITOR' as const },
+      { name: 'Portfólio (Intro)', href: '/admin/conteudo/portfolio', icon: PenSquare, minRole: 'EDITOR' as const },
+      { name: 'Contato', href: '/admin/conteudo/contato', icon: PenSquare, minRole: 'EDITOR' as const },
       { name: 'Páginas Fixas', href: '/admin/paginas', icon: PenSquare, minRole: 'EDITOR' as const },
     ]
   },
