@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +33,7 @@ interface ProjectFormProps {
 
 export default function ProjectForm({ initialData }: ProjectFormProps) {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
+  const [isPending, startTransition] = useTransition();
   
   let defaultImages: string[] = [];
   try {
@@ -63,31 +63,31 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
   const { register, handleSubmit, control, watch, formState: { errors } } = form;
 
   const onSubmit = async (data: ProjectFormValues) => {
-    setIsSaving(true);
-    try {
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === 'images') {
-           formData.append(key, JSON.stringify(value));
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+          if (key === 'images') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        const res = initialData?.id ? await updateProject(initialData.id, formData) : await createProject(formData);
+
+        if (res.success) {
+          toast.success(initialData?.id ? 'Projeto atualizado com sucesso!' : 'Projeto criado com sucesso!');
+          router.push('/admin/portfolio');
+          router.refresh();
         } else {
-          formData.append(key, String(value));
+          toast.error(res.error || 'Erro ao salvar o projeto.');
         }
-      });
-
-      const res = initialData?.id ? await updateProject(initialData.id, formData) : await createProject(formData);
-
-      if (res.success) {
-        toast.success('Projeto salvo!');
-        router.push('/admin/portfolio');
-        router.refresh();
-      } else {
-        toast.error(res.error || 'Erro ao salvar.');
+      } catch (err) {
+        toast.error('Erro inesperado ao salvar o projeto.');
+        console.error('Project submit error:', err);
       }
-    } catch (err) {
-      toast.error('Erro inesperado.');
-    } finally {
-      setIsSaving(false);
-    }
+    });
   };
 
   return (
@@ -101,7 +101,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
         </div>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => { form.setValue('status', 'DRAFT'); handleSubmit(onSubmit)(); }} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Save size={18} /> Rascunho</button>
-          <button type="submit" disabled={isSaving} className="px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors disabled:opacity-70" onClick={() => form.setValue('status', 'PUBLISHED')}><CheckCircle2 size={18} /> {isSaving ? 'Salvando...' : 'Publicar'}</button>
+          <button type="submit" disabled={isPending} className="px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors disabled:opacity-70" onClick={() => form.setValue('status', 'PUBLISHED')}><CheckCircle2 size={18} /> {isPending ? 'Salvando...' : 'Publicar'}</button>
         </div>
       </div>
 

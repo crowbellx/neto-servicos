@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { createTestimonial } from '@/app/actions/testimonials';
+import ImageUploadDropzone from '@/components/admin/ui/ImageUploadDropzone';
 import { ArrowLeft, Save, Star } from 'lucide-react';
 import Link from 'next/link';
 
@@ -17,6 +18,7 @@ const schema = z.object({
   service: z.string().min(2, 'Serviço é obrigatório'),
   rating: z.number().min(1).max(5),
   text: z.string().min(10, 'O texto deve ser mais longo'),
+  avatar: z.string().optional(),
   active: z.boolean(),
 });
 
@@ -24,7 +26,7 @@ export default function TestimonialForm() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, watch, control, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       rating: 5,
@@ -37,14 +39,19 @@ export default function TestimonialForm() {
 
   const onSubmit = async (data: any) => {
     setIsSaving(true);
-    const res = await createTestimonial({ ...data, order: 0 });
-    setIsSaving(false);
-    if (res.success) {
-      toast.success('Depoimento salvo!');
-      router.push('/admin/depoimentos');
-      router.refresh();
-    } else {
-      toast.error('Erro ao salvar');
+    try {
+      const res = await createTestimonial({ ...data, order: 0 });
+      if (res.success) {
+        toast.success('Depoimento criado com sucesso!');
+        router.push('/admin/depoimentos');
+        router.refresh();
+      } else {
+        toast.error(res.error || 'Erro ao salvar o depoimento.');
+      }
+    } catch (error) {
+      toast.error('Erro ao salvar o depoimento.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -82,8 +89,26 @@ export default function TestimonialForm() {
               <option value="Design">Design</option>
               <option value="Digital">Digital</option>
               <option value="Gráfica">Gráfica</option>
+              <option value="Sites">Sites</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Avatar do Cliente</label>
+          <Controller
+            name="avatar"
+            control={control}
+            render={({ field }) => (
+              <ImageUploadDropzone 
+                value={field.value} 
+                onChange={(val) => field.onChange(val as string)} 
+                multiple={false}
+                folder="testimonials"
+                label="Selecionar foto do cliente"
+              />
+            )}
+          />
         </div>
 
         <div>

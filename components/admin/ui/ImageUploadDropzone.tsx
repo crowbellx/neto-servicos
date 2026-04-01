@@ -5,6 +5,8 @@ import { useDropzone } from 'react-dropzone';
 import { UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { createSignedUploadUrl, recordMedia } from '@/app/actions/media';
+
 interface ImageUploadDropzoneProps {
   value?: string | string[];
   onChange?: (val: string | string[]) => void;
@@ -21,7 +23,7 @@ export default function ImageUploadDropzone({
   multiple = false,
   maxFiles = 1,
   className = '',
-  label = 'Arraste imagens ou clique para selecionar',
+  label = 'Clique ou arraste para fazer upload',
   folder = 'uploads',
 }: ImageUploadDropzoneProps) {
   const [isUploading, setIsUploading] = useState(false);
@@ -35,22 +37,51 @@ export default function ImageUploadDropzone({
     async (acceptedFiles: File[]) => {
       setIsUploading(true);
       try {
-        const formData = new FormData();
-        acceptedFiles.forEach((file) => formData.append('files', file));
-        formData.append('folder', folder);
+        const uploadPromises = acceptedFiles.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+          const filePath = `${folder}/${fileName}`;
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
+          // 1. Obter URL Assinada do Servidor
+          const res = await createSignedUploadUrl(filePath);
+          if (!res.success || !res.signedUrl) {
+            throw new Error(res.error || 'Erro ao gerar URL de upload');
+          }
+
+          // 2. Upload DIRETO do Browser para o Supabase (PUT)
+          const uploadRes = await fetch(res.signedUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+
+          if (!uploadRes.ok) {
+            throw new Error('Falha no upload direto para o Storage');
+          }
+
+          // 3. Registrar no Banco de Dados
+          const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+          const publicUrl = `${baseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
+
+          const dbRes = await recordMedia({
+            url: publicUrl,
+            filename: filePath,
+            type: file.type,
+            size: file.size,
+          });
+
+          if (!dbRes.success) {
+            console.error('Erro ao registrar no banco:', dbRes.error);
+          }
+
+          return publicUrl;
         });
 
-        if (!response.ok) {
-          const body = (await response.json().catch(() => ({}))) as { error?: string };
-          throw new Error(body.error || 'Falha no upload');
-        }
-
-        const body = (await response.json()) as { files?: Array<{ url: string }> };
-        const uploadedUrls = (body.files || []).map((file) => file.url);
+        const uploadedUrls = await Promise.all(uploadPromises);
+        
         const allImages = multiple ? [...currentImages, ...uploadedUrls] : uploadedUrls;
         const limitedImages = allImages.slice(0, multiple ? maxFiles : 1);
 
@@ -58,10 +89,11 @@ export default function ImageUploadDropzone({
           onChange(multiple ? limitedImages : limitedImages[0]);
         }
 
-        toast.success('Upload concluído com sucesso.');
+        toast.success(`Upload de ${uploadedUrls.length} imagem(ns) concluído com sucesso.`);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Erro inesperado no upload';
-        toast.error(message);
+        toast.error(`Erro no upload: ${message}`);
+        console.error('Supabase direct upload error:', error);
       } finally {
         setIsUploading(false);
       }
@@ -111,7 +143,7 @@ export default function ImageUploadDropzone({
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {multiple ? `Até ${maxFiles} arquivos. ` : 'Apenas 1 arquivo. '}
-              JPG, PNG, WebP (max 10MB)
+              JPG, PNG, WebP (max 100MB)
             </p>
           </div>
         </div>

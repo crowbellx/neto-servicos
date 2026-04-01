@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { uploadSettingsImage } from '@/app/actions/media';
+import { toast } from 'sonner';
+import { createSignedUploadUrl, recordMedia } from '@/app/actions/media';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -26,24 +27,53 @@ export default function ImageUploadField({
     if (!file) return;
 
     setIsUploading(true);
+    const loadingToast = toast.loading(`Enviando ${label}...`);
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `settings/${fileName}`;
 
-      console.log(`[Upload] Starting upload for: ${file.name} (${file.type || 'unknown type'})`);
-      const result = await uploadSettingsImage(formData);
+      // 1. Obter URL Assinada
+      const res = await createSignedUploadUrl(filePath);
+      if (!res.success || !res.signedUrl) {
+        throw new Error(res.error || 'Erro ao gerar URL de upload');
+      }
 
-      if (result.success && result.url) {
-        setUrl(result.url);
+      // 2. Upload DIRETO do Browser para o Supabase (PUT)
+      const uploadRes = await fetch(res.signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Falha no upload direto para o Storage');
+      }
+
+      // 3. Registrar no Banco de Dados
+      const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+      const publicUrl = `${baseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
+
+      const dbRes = await recordMedia({
+        url: publicUrl,
+        filename: filePath,
+        type: file.type,
+        size: file.size,
+      });
+
+      if (dbRes.success) {
+        setUrl(publicUrl);
+        toast.success(`Upload do ${label} concluído!`, { id: loadingToast });
       } else {
-        const errorMsg = result.error || 'Erro desconhecido durante o upload.';
-        console.error('[Upload] Server rejection:', errorMsg);
-        alert(`Erro ao fazer upload: ${errorMsg}`);
+        throw new Error(dbRes.error || 'Erro ao registrar no banco');
       }
     } catch (error: any) {
-      console.error('[Upload] Client-side exception:', error);
-      const detail = error?.message || JSON.stringify(error);
-      alert(`Ocorreu um erro inesperado ao fazer upload da imagem.\n\nDetalhes: ${detail}`);
+      console.error('[Upload] Error:', error);
+      toast.error(`Erro no upload: ${error.message || 'Falha desconhecida'}`, { id: loadingToast });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

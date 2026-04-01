@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
 
 export async function getMedia() {
   try {
@@ -143,10 +144,6 @@ export async function uploadSettingsImage(formData: FormData) {
       .from(bucket)
       .getPublicUrl(filePath);
 
-    if (!publicUrl) {
-      return { success: false, error: 'Não foi possível gerar a URL pública da imagem.' };
-    }
-
     return { success: true, url: publicUrl };
   } catch (error: any) {
     console.error('[Upload] Critical server failure:', error);
@@ -154,5 +151,61 @@ export async function uploadSettingsImage(formData: FormData) {
       success: false, 
       error: `Erro interno no servidor: ${error?.message || 'Falha catastrófica'}` 
     };
+  }
+}
+export async function createSignedUploadUrl(path: string) {
+  try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+    const supabase = createSupabaseAdminClient();
+    
+    // Generate a signed URL for a specific bucket path
+    // expiresIn: 60 seconds is enough for a standard upload
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUploadUrl(path);
+      
+    if (error) {
+      console.error('[SignedURL] Error:', error);
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true, signedUrl: data.signedUrl, token: data.token, path: data.path };
+  } catch (error: any) {
+    console.error('[SignedURL] Critical Failure:', error);
+    return { success: false, error: 'Falha ao gerar URL de upload' };
+  }
+}
+
+/**
+ * Após o upload direto para o Supabase pelo cliente, chamamos esta ação 
+ * para registrar a mídia no nosso banco de dados Prisma.
+ */
+export async function recordMedia(data: {
+  url: string;
+  filename: string;
+  type: string;
+  size: number;
+}) {
+  try {
+    const session = await auth();
+    if (!session) return { success: false, error: 'Não autorizado' };
+
+    const user = session?.user as any;
+
+    const media = await prisma.media.create({
+      data: {
+        ...data,
+        uploadedBy: user.id || user.email || 'system',
+      },
+    });
+
+    revalidatePath('/admin/midia');
+    return { success: true, data: media };
+  } catch (error) {
+    console.error('[RecordMedia] Error:', error);
+    return { success: false, error: 'Falha ao registrar mídia no banco' };
   }
 }

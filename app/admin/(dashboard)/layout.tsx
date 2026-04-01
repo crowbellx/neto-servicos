@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import AdminSidebar from '@/components/admin/layout/AdminSidebar';
 import AdminTopbar from '@/components/admin/layout/AdminTopbar';
 import { prisma } from '@/lib/prisma';
+import { Toaster } from 'sonner';
 
 // Importante para garantir que a sessão seja verificada em tempo real em cada navegação
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,7 @@ export default async function DashboardLayout({
           {children}
         </main>
       </div>
+      <Toaster position="top-right" richColors />
     </div>
   );
 }

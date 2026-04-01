@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,7 +55,7 @@ function parseImages(raw: string | undefined): string[] {
 
 export default function PostForm({ initialData }: PostFormProps) {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
+  const [isPending, startTransition] = useTransition();
   
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -77,36 +77,36 @@ export default function PostForm({ initialData }: PostFormProps) {
   const { register, handleSubmit, control, watch, formState: { errors } } = form;
 
   const onSubmit = async (data: PostFormValues) => {
-    setIsSaving(true);
-    try {
-      const formData = new FormData();
-      (Object.entries(data) as [string, any][]).forEach(([key, value]) => {
-        if (key === 'images') {
-          formData.append(key, JSON.stringify(value));
-        } else if (value !== undefined && value !== null) {
-          formData.append(key, String(value));
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        (Object.entries(data) as [string, any][]).forEach(([key, value]) => {
+          if (key === 'images') {
+            formData.append(key, JSON.stringify(value));
+          } else if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        });
+
+        let res;
+        if (initialData?.id) {
+          res = await updatePost(initialData.id, formData);
+        } else {
+          res = await createPost(formData);
         }
-      });
 
-      let res;
-      if (initialData?.id) {
-        res = await updatePost(initialData.id, formData);
-      } else {
-        res = await createPost(formData);
+        if (res.success) {
+          toast.success(initialData?.id ? 'Post atualizado com sucesso!' : 'Post criado com sucesso!');
+          router.push('/admin/blog');
+          router.refresh();
+        } else {
+          toast.error(res.error || 'Erro ao salvar o post.');
+        }
+      } catch (err) {
+        toast.error('Ocorreu um erro inesperado ao salvar o post.');
+        console.error('Post submit error:', err);
       }
-
-      if (res.success) {
-        toast.success(initialData?.id ? 'Post atualizado!' : 'Post criado com sucesso!');
-        router.push('/admin/blog');
-        router.refresh();
-      } else {
-        toast.error(res.error || 'Erro ao salvar o post.');
-      }
-    } catch (err) {
-      toast.error('Ocorreu um erro inesperado.');
-    } finally {
-      setIsSaving(false);
-    }
+    });
   };
 
   return (
@@ -146,12 +146,12 @@ export default function PostForm({ initialData }: PostFormProps) {
           
           <button 
             type="submit"
-            disabled={isSaving}
+            disabled={isPending}
             className="flex items-center gap-2 px-4 py-2 bg-laranja text-white rounded-lg text-sm font-medium hover:bg-[#D4651A] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             onClick={() => form.setValue('status', 'PUBLISHED')}
           >
             <CheckCircle2 size={18} />
-            {isSaving ? 'Publicando...' : 'Publicar Agora'}
+            {isPending ? 'Publicando...' : 'Publicar Agora'}
           </button>
         </div>
       </div>

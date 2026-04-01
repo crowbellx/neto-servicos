@@ -19,7 +19,11 @@ export const revalidate = 3600;
 
 // Adding specific home-view caches
 const getCachedTestimonials = unstable_cache(
-  async () => prisma.testimonial.findMany({ where: { active: true }, orderBy: { order: 'asc' }, take: 5 }),
+  async () => prisma.testimonial.findMany({ 
+    where: { active: true }, 
+    orderBy: { createdAt: 'desc' }, 
+    take: 5 
+  }),
   ['home-testimonials'],
   { tags: ['testimonials'], revalidate: 3600 }
 );
