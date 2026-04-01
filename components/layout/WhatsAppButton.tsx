@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle } from 'lucide-react';
+import { trackWhatsAppClick } from '@/app/actions/whatsapp';
 
 interface WhatsAppButtonProps {
   number?: string;
@@ -20,8 +21,16 @@ export default function WhatsAppButton({ number = '5511999999999', message = 'Ol
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const encodedMessage = encodeURIComponent(message);
-  const whatsappUrl = `https://wa.me/${number}?text=${encodedMessage}`;
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Fire and forget - não bloqueia o usuário
+    trackWhatsAppClick(message).catch(console.error);
+    
+    // Abre o WhatsApp normalmente
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${number}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <AnimatePresence>
@@ -34,7 +43,8 @@ export default function WhatsAppButton({ number = '5511999999999', message = 'Ol
           className="fixed bottom-6 right-6 z-50 group"
         >
           <a
-            href={whatsappUrl}
+            href="#"
+            onClick={handleClick}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:scale-110 hover:shadow-[0_8px_30px_rgba(37,211,102,0.6)] transition-all duration-300 relative"

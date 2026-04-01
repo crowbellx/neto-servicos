@@ -1,22 +1,34 @@
 import { NextResponse } from 'next/server';
+import { submitContact } from '@/app/actions/contact';
 
 /**
- * Edge Runtime — sem cold start, não consome GB-hora serverless.
- * Rota de contato que persiste o lead no banco via Server Action indiretamente.
- * TODO: Integrar com Resend/SendGrid para envio real de email.
+ * Rota de contato que persiste o lead e o cliente no banco.
  */
-export const runtime = 'edge';
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    
+    // Converte os nomes dos campos do formulário para o esperado pela action
+    const result = await submitContact({
+      nome: body.nome,
+      email: body.email,
+      whatsapp: body.whatsapp,
+      empresa: body.empresa,
+      servico: body.servico,
+      preferencia: body.preferencia,
+      mensagem: body.mensagem,
+      origem: body.origem || 'API Route'
+    });
 
-    // TODO: Persistir como Lead no banco via fetch para a API interna
-    // ou mover esta lógica para uma Server Action diretamente no formulário
-    console.log('Received contact form submission:', body);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
-      { message: 'Mensagem enviada com sucesso!' },
+      { message: 'Mensagem enviada com sucesso!', data: result.data },
       { status: 200 }
     );
   } catch (error) {

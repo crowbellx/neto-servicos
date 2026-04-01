@@ -27,9 +27,15 @@ export async function updateSettings(key: string, data: any) {
     revalidatePath('/admin/configuracoes/seo');
     revalidatePath('/admin/configuracoes/integracoes');
     revalidateTag(SETTINGS_CACHE_TAG);
-    // Garante que mudanças em configurações globais reflitam nas páginas públicas
+    // Garante que mudanças em configurações globais reflitam em TODO o site (layout e páginas)
+    revalidatePath('/', 'layout');
     revalidatePath('/');
+    revalidatePath('/sobre');
+    revalidatePath('/servicos');
+    revalidatePath('/portfolio');
     revalidatePath('/contato');
+    revalidatePath('/blog');
+    revalidatePath('/admin', 'layout');
     return { success: true, data: setting };
   } catch (error) {
     console.error(`Error updating setting ${key}:`, error);
@@ -115,6 +121,11 @@ export async function updateSiteConfig(data: any) {
     revalidatePath('/admin/configuracoes/seo');
     revalidatePath('/admin/configuracoes/integracoes');
     revalidateTag(SETTINGS_CACHE_TAG);
+    
+    // Invalidação global para garantir que logo/favicon atualizem
+    revalidatePath('/', 'layout');
+    revalidatePath('/admin', 'layout');
+    
     return { success: true, data: config };
   } catch (error) {
     console.error('Error updating site config:', error);
