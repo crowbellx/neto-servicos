@@ -7,43 +7,42 @@ import DepoimentosSection from '@/components/home/DepoimentosSection';
 import DiferenciaisSection from '@/components/home/DiferenciaisSection';
 import CTASection from '@/components/home/CTASection';
 import ContatoSection from '@/components/contato/ContatoSection';
+import { 
+  getCachedPublishedProjects, 
+  getCachedPublishedPosts,
+  TAGS
+} from '@/lib/data-fetching';
 import { prisma } from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 
-export const revalidate = 60;
+export const revalidate = 3600;
+
+// Adding specific home-view caches
+const getCachedTestimonials = unstable_cache(
+  async () => prisma.testimonial.findMany({ where: { active: true }, orderBy: { order: 'asc' }, take: 5 }),
+  ['home-testimonials'],
+  { tags: ['testimonials'], revalidate: 3600 }
+);
+
+const getCachedServices = unstable_cache(
+  async () => prisma.service.findMany({ where: { status: 'ACTIVE' }, orderBy: { order: 'asc' } }),
+  ['home-services'],
+  { tags: [TAGS.SERVICES], revalidate: 3600 }
+);
+
+const getCachedHomePageData = unstable_cache(
+  async () => prisma.page.findFirst({ where: { slug: '/', status: 'PUBLISHED' } }),
+  ['home-page-data'],
+  { tags: ['pages'], revalidate: 3600 }
+);
 
 export default async function Home() {
-  let projects: any[] = [];
-  let testimonials: any[] = [];
-  let services: any[] = [];
-  let pageData: any = null;
-
-  try {
-    const [fetchedProjects, fetchedTestimonials, fetchedServices, fetchedPageData] = await Promise.all([
-      prisma.project.findMany({
-        where: { status: 'PUBLISHED', deletedAt: null },
-        orderBy: { createdAt: 'desc' },
-        take: 6
-      }),
-      prisma.testimonial.findMany({
-        where: { active: true },
-        orderBy: { order: 'asc' },
-        take: 5
-      }),
-      prisma.service.findMany({
-        where: { status: 'ACTIVE' },
-        orderBy: { order: 'asc' }
-      }),
-      prisma.page.findFirst({
-        where: { slug: '/', status: 'PUBLISHED' }
-      })
-    ]);
-    projects = fetchedProjects;
-    testimonials = fetchedTestimonials;
-    services = fetchedServices;
-    pageData = fetchedPageData;
-  } catch (error) {
-    console.error('[Build] Erro ao buscar dados da Home:', error);
-  }
+  const [projects, testimonials, services, pageData] = await Promise.all([
+    getCachedPublishedProjects(),
+    getCachedTestimonials(),
+    getCachedServices(),
+    getCachedHomePageData()
+  ]);
 
   return (
     <>

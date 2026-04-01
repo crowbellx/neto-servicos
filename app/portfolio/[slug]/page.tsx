@@ -1,17 +1,22 @@
-import { prisma } from '@/lib/prisma';
+import { getCachedProjectBySlug, getCachedPublishedProjects } from '@/lib/data-fetching';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export const revalidate = 60;
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const projects = await getCachedPublishedProjects();
+  return projects.map((p) => ({
+    slug: p.slug,
+  }));
+}
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  const project = await prisma.project.findFirst({
-    where: { slug, status: 'PUBLISHED', deletedAt: null }
-  });
+  const project = await getCachedProjectBySlug(slug);
 
   if (!project) notFound();
 

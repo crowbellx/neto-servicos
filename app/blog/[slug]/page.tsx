@@ -1,15 +1,22 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { getCachedPublishedPostBySlug } from '@/lib/cache/blog-public';
+import { getCachedPublishedPosts, getCachedPostBySlug } from '@/lib/data-fetching';
 import PostViewTracker from '@/components/blog/PostViewTracker';
 import type { Metadata } from 'next';
+
+export async function generateStaticParams() {
+  const posts = await getCachedPublishedPosts();
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getCachedPublishedPostBySlug(slug);
+  const post = await getCachedPostBySlug(slug);
   if (!post) {
     return { title: 'Artigo | Neto Serviços' };
   }
@@ -31,7 +38,7 @@ function parseTags(tagsJson: string): string[] {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = await getCachedPublishedPostBySlug(slug);
+  const post = await getCachedPostBySlug(slug);
 
   if (!post) {
     notFound();

@@ -1,8 +1,9 @@
 import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { TAGS } from '../data-fetching';
 
 /** Tag para invalidar ao salvar em Configurações (SEO, integrações, geral). */
-export const SETTINGS_CACHE_TAG = 'settings';
+export const SETTINGS_CACHE_TAG = TAGS.SETTINGS;
 
 type PublicSettingsBundle = {
   seo: Record<string, unknown>;
@@ -27,6 +28,7 @@ function safeParse(json: string | null | undefined): Record<string, unknown> {
 export const getCachedPublicSettingsBundle = unstable_cache(
   async (): Promise<PublicSettingsBundle> => {
     try {
+      // Usar a conexão direta para evitar fadiga do pooler em Serverless
       const rows = await prisma.setting.findMany({
         where: { key: { in: ['seo', 'integrations', 'general'] } },
         select: { key: true, data: true },
@@ -39,9 +41,10 @@ export const getCachedPublicSettingsBundle = unstable_cache(
       };
     } catch (error) {
       console.error('[Cache Settings] Erro ao buscar configurações:', error);
+      // Fallback para não quebrar o layout se o banco estiver fora ou ausente no build
       return { seo: {}, integrations: {}, general: {} };
     }
   },
-  ['public-settings-bundle-v1'],
-  { tags: [SETTINGS_CACHE_TAG], revalidate: 120 }
+  ['public-settings-bundle-v2'],
+  { tags: [SETTINGS_CACHE_TAG], revalidate: 3600 }
 );

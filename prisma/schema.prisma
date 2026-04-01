@@ -61,6 +61,9 @@ model Lead {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
+
+  @@index([status, deletedAt])
+  @@index([createdAt])
 }
 
 model Note {
@@ -100,6 +103,9 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
+
+  @@index([status, deletedAt])
+  @@index([category])
 }
 
 model Post {
@@ -126,6 +132,10 @@ model Post {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
+
+  @@index([status, deletedAt])
+  @@index([category])
+  @@index([authorId])
 }
 
 model Testimonial {
@@ -184,6 +194,9 @@ model AuditLog {
   ip        String?
   userAgent String?
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, resource])
 }
 
 model Notification {
