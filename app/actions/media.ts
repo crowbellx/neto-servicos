@@ -73,3 +73,44 @@ export async function deleteMedia(id: string) {
     return { success: false, error: 'Failed to delete media' };
   }
 }
+
+export async function uploadSettingsImage(formData: FormData) {
+  try {
+    const file = formData.get('file') as File;
+    if (!file) {
+      return { success: false, error: 'No file provided' };
+    }
+
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+    const supabase = createSupabaseAdminClient();
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `settings/${fileName}`;
+
+    // Convert File to Buffer/ArrayBuffer for the admin client
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      return { success: false, error: uploadError.message };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return { success: true, url: publicUrl };
+  } catch (error) {
+    console.error('Server upload error:', error);
+    return { success: false, error: 'Failed to upload image' };
+  }
+}

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
-import { Upload, X, Loader2, ImageIcon } from 'lucide-react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import Image from 'next/image';
+import { useState, useRef } from 'react';
+import { Upload, X, Loader2 } from 'lucide-react';
+import { uploadSettingsImage } from '@/app/actions/media';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -21,40 +20,28 @@ export default function ImageUploadField({
   const [url, setUrl] = useState(defaultValue || '');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!supabase) {
-      console.error('Supabase client not initialized. Check your environment variables.');
-      alert('Configuração incompleta: Variáveis do Supabase não encontradas.');
-      return;
-    }
-
     setIsUploading(true);
     try {
-      const bucket = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'media';
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `settings/${fileName}`;
+      const formData = new FormData();
+      formData.append('file', file);
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file);
+      const result = await uploadSettingsImage(formData);
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      setUrl(publicUrl);
+      if (result.success && result.url) {
+        setUrl(result.url);
+      } else {
+        const errorMsg = result.error || 'Erro desconhecido durante o upload.';
+        console.error('Server upload failed:', errorMsg);
+        alert(`Erro ao fazer upload da imagem: ${errorMsg}`);
+      }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Erro ao fazer upload da imagem.');
+      console.error('Unexpected error uploading image:', error);
+      alert('Ocorreu um erro inesperado ao fazer upload da imagem. Por favor, tente novamente.');
     } finally {
       setIsUploading(false);
     }
@@ -110,7 +97,7 @@ export default function ImageUploadField({
         ref={fileInputRef}
         onChange={handleUpload}
         className="hidden" 
-        accept="image/*"
+        accept="image/*, .ico, .svg"
       />
       {/* Hidden input to be sent with the parent form */}
       <input type="hidden" name={name} value={url} />
