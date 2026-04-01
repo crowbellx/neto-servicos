@@ -27,7 +27,7 @@ export default async function PortfolioPage() {
     console.error('[Build] Erro ao buscar projetos:', error);
   }
 
-  const header = pageContent?.header || { 
+  const header = (pageContent?.header && Object.keys(pageContent.header).length > 0) ? pageContent.header : { 
     title: 'Nosso Portfólio', 
     subtitle: 'Trabalhos que falam por si.' 
   };

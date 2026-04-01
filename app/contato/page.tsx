@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ContatoPage() {
   const { contact } = await getCachedPublicSettingsBundle();
   
-  const header = contact?.header || { 
+  const header = (contact?.header && Object.keys(contact.header).length > 0) ? contact.header : { 
     title: 'Fale Conosco', 
     subtitle: 'Estamos prontos para ouvir sobre o seu projeto.' 
   };

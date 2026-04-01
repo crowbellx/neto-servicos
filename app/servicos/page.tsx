@@ -39,7 +39,7 @@ export default async function ServicosPage() {
     console.error('[Build] Erro ao buscar serviços:', error);
   }
 
-  const header = pageContent?.header || { 
+  const header = (pageContent?.header && Object.keys(pageContent.header).length > 0) ? pageContent.header : { 
     title: 'Nossas Especialidades', 
     subtitle: 'Do físico ao digital, cuidamos de cada detalhe da sua marca com excelência técnica e visão estratégica.' 
   };

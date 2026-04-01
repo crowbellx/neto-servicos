@@ -15,8 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SobrePage() {
   const { about } = await getCachedPublicSettingsBundle();
   
-  const header = about?.header || { title: 'Nossa História', subtitle: 'Conheça a Neto Serviços' };
-  const story = about?.story || { 
+  const header = (about?.header && Object.keys(about.header).length > 0) ? about.header : { 
+    title: 'Nossa História', 
+    subtitle: 'Conheça a Neto Serviços' 
+  };
+
+  const story = (about?.story && Object.keys(about.story).length > 0) ? about.story : { 
     title: 'Nascemos da necessidade de simplificar.', 
     content: '<p>Reunimos especialistas de Gráfica, Design e Desenvolvimento Digital sob o mesmo teto para garantir que sua marca tenha uma identidade forte e coerente.</p>',
     image: 'https://picsum.photos/seed/escritorio/800/1000'
