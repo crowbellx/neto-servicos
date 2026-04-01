@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react'],
   },
   serverActions: {
-    bodySizeLimit: '10mb',
+    bodySizeLimit: '50mb', // Increased to allow large posts with multiple images/content
   },
   serverExternalPackages: ['@prisma/client'],
   eslint: {
