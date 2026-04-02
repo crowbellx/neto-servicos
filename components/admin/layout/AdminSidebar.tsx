@@ -246,7 +246,7 @@ export default function AdminSidebar({
         {!collapsed ? (
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-white/10 uppercase tracking-widest">Painel v1.5.4</span>
+              <span className="text-[10px] font-bold text-white/10 uppercase tracking-widest">Painel v1.5.5</span>
               <div className="flex items-center gap-1.5 bg-green-500/5 px-2 py-0.5 rounded-full border border-green-500/10">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
                 <span className="text-[9px] font-bold text-green-500 uppercase tracking-tighter">Conectado</span>
