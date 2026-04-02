@@ -1,12 +1,15 @@
+import dynamic from 'next/dynamic';
 import HeroSection from '@/components/home/HeroSection';
 import CountersSection from '@/components/home/CountersSection';
 import ServicosSection from '@/components/home/ServicosSection';
-import ProcessoSection from '@/components/home/ProcessoSection';
-import PortfolioPreview from '@/components/home/PortfolioPreview';
-import DepoimentosSection from '@/components/home/DepoimentosSection';
-import DiferenciaisSection from '@/components/home/DiferenciaisSection';
-import CTASection from '@/components/home/CTASection';
-import ContatoSection from '@/components/contato/ContatoSection';
+
+const ProcessoSection = dynamic(() => import('@/components/home/ProcessoSection'));
+const PortfolioPreview = dynamic(() => import('@/components/home/PortfolioPreview'));
+const DepoimentosSection = dynamic(() => import('@/components/home/DepoimentosSection'));
+const DiferenciaisSection = dynamic(() => import('@/components/home/DiferenciaisSection'));
+const CTASection = dynamic(() => import('@/components/home/CTASection'));
+const ContatoSection = dynamic(() => import('@/components/contato/ContatoSection'));
+
 import { 
   getCachedPublishedProjects, 
   getCachedPublishedPosts,
@@ -38,12 +41,11 @@ const getCachedServices = unstable_cache(
 );
 
 export default async function Home() {
-  // Busca todos os dados em paralelo — single round-trip conceitual, cacheado 1h
   const [projects, testimonials, services, homeContent] = await Promise.all([
     getCachedPublishedProjects(),
     getCachedTestimonials(),
     getCachedServices(),
-    getCachedHomeContent(),   // ← seções editáveis via admin
+    getCachedHomeContent(),   
   ]);
 
   return (

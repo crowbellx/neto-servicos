@@ -9,11 +9,17 @@ import {
   ArrowDownRight,
   AlertCircle
 } from 'lucide-react';
-import DashboardCharts from '@/components/admin/dashboard/DashboardCharts';
+import dynamic from 'next/dynamic';
+import { prisma } from '@/lib/prisma';
+
+const DashboardCharts = dynamic(() => import('@/components/admin/dashboard/DashboardCharts'), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full bg-gray-50 animate-pulse rounded-xl" />
+});
+
 import RecentLeads from '@/components/admin/dashboard/RecentLeads';
 import RecentPosts from '@/components/admin/dashboard/RecentPosts';
 import RecentProjects from '@/components/admin/dashboard/RecentProjects';
-import { prisma } from '@/lib/prisma';
 
 export default async function AdminDashboard() {
   const session = await auth();

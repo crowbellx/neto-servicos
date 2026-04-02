@@ -9,7 +9,27 @@ import {
   Filter
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import DashboardCharts from '@/components/admin/dashboard/DashboardCharts';
+import dynamic from 'next/dynamic';
+import { unstable_cache } from 'next/cache';
+
+const DashboardCharts = dynamic(() => import('@/components/admin/dashboard/DashboardCharts'), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full bg-gray-50 animate-pulse rounded-xl" />
+});
+
+// Cache global stats for 5 minutes
+const getGlobalStats = unstable_cache(
+  async () => {
+    const [leads, posts, projects] = await Promise.all([
+      prisma.lead.count({ where: { deletedAt: null } }),
+      prisma.post.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+      prisma.project.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+    ]);
+    return { leads, posts, projects };
+  },
+  ['admin-global-stats'],
+  { revalidate: 300, tags: ['stats'] }
+);
 
 export default async function AnalyticsPage() {
   const session = await auth();
@@ -22,11 +42,11 @@ export default async function AnalyticsPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // 30 days window for general stats
-  const [totalLeads, totalPosts, totalProjects, recentLeadsData, sourcesCount, topPosts, topProjects] = await Promise.all([
-    prisma.lead.count({ where: { deletedAt: null } }),
-    prisma.post.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
-    prisma.project.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+  // Stats from cache or DB
+  const stats = await getGlobalStats();
+  
+  // Real-time data for the current period (not cached)
+  const [recentLeadsData, sourcesCount, topPosts, topProjects] = await Promise.all([
     prisma.lead.findMany({
       where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null },
       select: { createdAt: true, status: true }
@@ -51,9 +71,9 @@ export default async function AnalyticsPage() {
   ]);
 
   // Lead Conversion Stats
-  const convertedLeads = totalLeads > 0 ? await prisma.lead.count({ where: { status: 'CLOSED', deletedAt: null } }) : 0;
-  const conversionRate = totalLeads > 0 
-    ? ((convertedLeads / totalLeads) * 100).toFixed(1) 
+  const convertedLeads = stats.leads > 0 ? await prisma.lead.count({ where: { status: 'CLOSED', deletedAt: null } }) : 0;
+  const conversionRate = stats.leads > 0 
+    ? ((convertedLeads / stats.leads) * 100).toFixed(1) 
     : '0';
 
   // Preparing data for the chart (last 7 days)
@@ -123,7 +143,7 @@ export default async function AnalyticsPage() {
         />
         <AnalyticsCard 
           title="Total de Leads" 
-          value={String(totalLeads)} 
+          value={String(stats.leads)} 
           description="Contatos recebidos via site"
           icon={Users} 
           color="text-blue-600"
@@ -131,7 +151,7 @@ export default async function AnalyticsPage() {
         />
         <AnalyticsCard 
           title="Conteúdo Ativo" 
-          value={String(totalPosts + totalProjects)} 
+          value={String(stats.posts + stats.projects)} 
           description="Posts e Projetos online"
           icon={BarChart3} 
           color="text-purple-600"
@@ -147,7 +167,7 @@ export default async function AnalyticsPage() {
         />
       </div>
 
-      {/* Performance Chart */}
+      {/* Performance Chart Area */}
       <DashboardCharts 
         data={chartData} 
         totalLeads={recentLeadsData.filter(l => l.createdAt >= sevenDaysAgo).length}
