@@ -219,6 +219,7 @@ model Client {
   company   String?
   document  String?  // CPF/CNPJ
   address   String?
+  leadId    String?  @unique
   status    String   @default("ACTIVE") // ACTIVE, INACTIVE
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

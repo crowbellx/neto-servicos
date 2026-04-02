@@ -61,6 +61,22 @@ export async function updateLeadStatus(id: string, status: string) {
       },
     });
 
+    if (normalizedStatus === 'CLOSED') {
+      const existingClient = await prisma.client.findUnique({ where: { leadId: id } });
+      if (!existingClient) {
+         await prisma.client.create({
+           data: {
+             name: lead.name,
+             email: lead.email,
+             phone: lead.whatsapp,
+             company: lead.company,
+             leadId: lead.id
+           }
+         });
+         revalidatePath('/admin/clientes');
+      }
+    }
+
     revalidatePath('/admin/leads');
     revalidatePath(`/admin/leads/${id}`);
     return { success: true, data: lead };
@@ -96,11 +112,20 @@ export async function addLeadNote(leadId: string, text: string) {
 
 export async function deleteLead(id: string) {
   try {
-    await prisma.lead.update({
+    // Delete associated notes and interactions first (foreign key constraints)
+    await prisma.note.deleteMany({ where: { leadId: id } });
+    await prisma.interaction.deleteMany({ where: { leadId: id } });
+
+    // Delete generated client if exists
+    await prisma.client.deleteMany({ where: { leadId: id } });
+
+    // Hard delete the lead
+    await prisma.lead.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
+
     revalidatePath('/admin/leads');
+    revalidatePath('/admin/clientes');
     return { success: true };
   } catch (error) {
     console.error('Error deleting lead:', error);
@@ -167,17 +192,23 @@ export async function bulkArchiveLeads(leadIds: string[]) {
   try {
     if (!leadIds.length) return { success: true };
 
-    await prisma.lead.updateMany({
-      where: { id: { in: leadIds }, deletedAt: null },
-      data: { deletedAt: new Date() },
-    });
+    // Delete all dependencies in cascade order
+    await prisma.note.deleteMany({ where: { leadId: { in: leadIds } } });
+    await prisma.interaction.deleteMany({ where: { leadId: { in: leadIds } } });
+
+    // Delete any clients auto-generated from these leads
+    await prisma.client.deleteMany({ where: { leadId: { in: leadIds } } });
+
+    // Hard delete the leads themselves
+    await prisma.lead.deleteMany({ where: { id: { in: leadIds } } });
 
     revalidatePath('/admin/leads');
+    revalidatePath('/admin/clientes');
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
     console.error('Error bulk archiving leads:', error);
-    return { success: false, error: 'Falha ao arquivar leads em lote' };
+    return { success: false, error: 'Falha ao excluir leads em lote' };
   }
 }
 
