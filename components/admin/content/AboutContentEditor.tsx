@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { updateContentSection } from '@/app/actions/settings';
 import { Save, Info, Target, Eye, Heart, Plus, Trash2, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import ImageUploadField from '@/components/admin/settings/ImageUploadField';
 
 type AboutSectionData = {
   header?: any;
@@ -106,6 +107,14 @@ export default function AboutContentEditor({ initialData }: { initialData: About
                   <label className={labelCls}>Subtítulo / Introdução rápida</label>
                   <input className={inputCls} value={header.subtitle} onChange={e => setHeader(p => ({ ...p, subtitle: e.target.value }))} />
                 </div>
+                <div>
+                  <ImageUploadField 
+                    label="Imagem de Fundo do Cabeçalho (Opcional)"
+                    defaultValue={header.backgroundImage}
+                    onChange={url => setHeader(p => ({ ...p, backgroundImage: url }))}
+                    helperText="Recomendado: 1920x1080px. Evite imagens com muito texto, pois ela será usada como fundo."
+                  />
+                </div>
               </div>
             </div>
             <button onClick={() => saveSection('about_header', header)} disabled={isPending} className="flex items-center gap-2 px-6 py-3 bg-laranja text-white rounded-lg font-semibold hover:bg-[#D4651A] transition-colors disabled:opacity-70">
@@ -129,10 +138,12 @@ export default function AboutContentEditor({ initialData }: { initialData: About
                   <p className="text-[10px] text-gray-400 mt-1">Suporta tags HTML como &lt;p&gt;, &lt;strong&gt;, &lt;br&gt;, etc.</p>
                 </div>
                 <div>
-                  <label className={labelCls}>URL da Imagem Lateral</label>
-                  <div className="flex gap-2">
-                    <input className={inputCls} placeholder="https://..." value={story.image} onChange={e => setStory(p => ({ ...p, image: e.target.value }))} />
-                  </div>
+                  <ImageUploadField 
+                    label="Imagem da Nossa História"
+                    defaultValue={story.image}
+                    onChange={url => setStory(p => ({ ...p, image: url }))}
+                    helperText="Recomendado: 800x1000px ou quadrado."
+                  />
                 </div>
               </div>
             </div>

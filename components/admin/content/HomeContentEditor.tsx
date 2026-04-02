@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { updateHomeSection } from '@/app/actions/settings';
 import { Save, Home, Hash, Star, CheckCircle2, Zap, Phone, Plus, Trash2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import ImageUploadField from '@/components/admin/settings/ImageUploadField';
 
 type HomeSectionData = {
   hero?: any;
@@ -267,8 +268,12 @@ export default function HomeContentEditor({ initialData }: { initialData: HomeSe
                   <input className={inputCls} value={diferenciais.subtitle} onChange={e => setDiferenciais(p => ({ ...p, subtitle: e.target.value }))} />
                 </div>
                 <div>
-                  <label className={labelCls}>URL da imagem lateral</label>
-                  <input className={inputCls} placeholder="https://..." value={diferenciais.image} onChange={e => setDiferenciais(p => ({ ...p, image: e.target.value }))} />
+                  <ImageUploadField 
+                    label="Imagem Lateral da Seção (Opcional)"
+                    defaultValue={diferenciais.image}
+                    onChange={url => setDiferenciais(p => ({ ...p, image: url }))}
+                    helperText="Recomendado: 800x800px ou retrato."
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelCls}>Título principal</label>

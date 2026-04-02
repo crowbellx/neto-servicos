@@ -7,16 +7,18 @@ import { createSignedUploadUrl, recordMedia } from '@/app/actions/media';
 
 interface ImageUploadFieldProps {
   label: string;
-  name: string;
+  name?: string;
   defaultValue?: string;
   helperText?: string;
+  onChange?: (url: string) => void;
 }
 
 export default function ImageUploadField({ 
   label, 
   name, 
   defaultValue, 
-  helperText 
+  helperText,
+  onChange
 }: ImageUploadFieldProps) {
   const [url, setUrl] = useState(defaultValue || '');
   const [isUploading, setIsUploading] = useState(false);
@@ -67,6 +69,7 @@ export default function ImageUploadField({
 
       if (dbRes.success) {
         setUrl(publicUrl);
+        if (onChange) onChange(publicUrl);
         toast.success(`Upload do ${label} concluído!`, { id: loadingToast });
       } else {
         throw new Error(dbRes.error || 'Erro ao registrar no banco');
@@ -82,6 +85,7 @@ export default function ImageUploadField({
 
   const removeImage = () => {
     setUrl('');
+    if (onChange) onChange('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -133,7 +137,7 @@ export default function ImageUploadField({
         accept="image/*, .ico, .svg"
       />
       {/* Hidden input to be sent with the parent form */}
-      <input type="hidden" name={name} value={url} />
+      {name && <input type="hidden" name={name} value={url} />}
     </div>
   );
 }

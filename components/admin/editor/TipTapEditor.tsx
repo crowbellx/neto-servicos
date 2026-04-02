@@ -12,11 +12,65 @@ import {
   Image as ImageIcon, Link as LinkIcon, Youtube as YoutubeIcon, 
   Undo, Redo, Minus
 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { toast } from 'sonner';
+import { createSignedUploadUrl, recordMedia } from '@/app/actions/media';
 
 const MenuBar = ({ editor }: { editor: any }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   if (!editor) {
     return null;
   }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const loadingToast = toast.loading('Enviando imagem...');
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `editor/${fileName}`;
+
+      const res = await createSignedUploadUrl(filePath);
+      if (!res.success || !res.signedUrl) throw new Error(res.error || 'Erro ao gerar URL');
+
+      const uploadRes = await fetch(res.signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      
+      if (!uploadRes.ok) throw new Error('Falha no upload para o Storage');
+
+      const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'media';
+      const publicUrl = `${baseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
+
+      const dbRes = await recordMedia({
+        url: publicUrl,
+        filename: filePath,
+        type: file.type,
+        size: file.size,
+      });
+
+      if (dbRes.success) {
+        editor.chain().focus().setImage({ src: publicUrl }).run();
+        toast.success('Imagem inserida!', { id: loadingToast });
+      } else {
+        throw new Error(dbRes.error || 'Erro ao registrar no banco');
+      }
+    } catch (error: any) {
+      toast.error(`Erro no upload: ${error.message}`, { id: loadingToast });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-gray-50 rounded-t-xl">
@@ -111,15 +165,18 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <LinkIcon size={18} />
       </button>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleImageUpload} 
+      />
       <button
-        onClick={() => {
-          const url = window.prompt('URL da imagem');
-          if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
-          }
-        }}
-        className="p-2 rounded hover:bg-gray-200 transition-colors text-gray-700"
-        title="Image"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isUploading}
+        className={`p-2 rounded hover:bg-gray-200 transition-colors ${isUploading ? 'opacity-50 text-laranja' : 'text-gray-700'}`}
+        title="Upload Image"
       >
         <ImageIcon size={18} />
       </button>
