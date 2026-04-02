@@ -9,13 +9,8 @@ import {
   Filter
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import dynamic from 'next/dynamic';
+import DashboardCharts from '@/components/admin/dashboard/DashboardChartsWrapper';
 import { unstable_cache } from 'next/cache';
-
-const DashboardCharts = dynamic(() => import('@/components/admin/dashboard/DashboardCharts'), {
-  ssr: false,
-  loading: () => <div className="h-[400px] w-full bg-gray-50 animate-pulse rounded-xl" />
-});
 
 // Cache global stats for 5 minutes
 const getGlobalStats = unstable_cache(
