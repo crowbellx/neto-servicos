@@ -22,38 +22,77 @@ export default async function AnalyticsPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // Fetching data for analytics
-  const [totalLeads, totalPosts, totalProjects, recentLeadsData] = await Promise.all([
+  // 30 days window for general stats
+  const [totalLeads, totalPosts, totalProjects, recentLeadsData, sourcesCount, topPosts, topProjects] = await Promise.all([
     prisma.lead.count({ where: { deletedAt: null } }),
     prisma.post.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
     prisma.project.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
     prisma.lead.findMany({
       where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null },
       select: { createdAt: true, status: true }
+    }),
+    prisma.lead.groupBy({
+      by: ['source'],
+      where: { deletedAt: null },
+      _count: { _all: true }
+    }),
+    prisma.post.findMany({
+      where: { status: 'PUBLISHED', deletedAt: null },
+      orderBy: { views: 'desc' },
+      take: 3,
+      select: { title: true, views: true }
+    }),
+    prisma.project.findMany({
+      where: { status: 'PUBLISHED', deletedAt: null },
+      orderBy: { views: 'desc' },
+      take: 3,
+      select: { title: true, views: true }
     })
   ]);
 
   // Lead Conversion Stats
-  const convertedLeads = recentLeadsData.filter(l => l.status === 'CLOSED').length;
-  const conversionRate = recentLeadsData.length > 0 
-    ? ((convertedLeads / recentLeadsData.length) * 100).toFixed(1) 
+  const convertedLeads = totalLeads > 0 ? await prisma.lead.count({ where: { status: 'CLOSED', deletedAt: null } }) : 0;
+  const conversionRate = totalLeads > 0 
+    ? ((convertedLeads / totalLeads) * 100).toFixed(1) 
     : '0';
 
   // Preparing data for the chart (last 7 days)
   const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(sevenDaysAgo);
-    d.setDate(sevenDaysAgo.getDate() + i + 1);
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    d.setHours(0, 0, 0, 0);
     return d;
   });
 
+  const [leadsByDayData, contentByDayData] = await Promise.all([
+     prisma.lead.groupBy({
+       by: ['createdAt'],
+       where: { createdAt: { gte: sevenDaysAgo }, deletedAt: null },
+       _count: { _all: true }
+     }),
+     Promise.all([
+        prisma.post.findMany({ where: { createdAt: { gte: sevenDaysAgo }, status: 'PUBLISHED' }, select: { createdAt: true } }),
+        prisma.project.findMany({ where: { createdAt: { gte: sevenDaysAgo }, status: 'PUBLISHED' }, select: { createdAt: true } })
+     ])
+  ]);
+
   const chartData = days.map(date => {
     const dayStr = date.toISOString().split('T')[0];
+    const leadsCount = recentLeadsData.filter(l => l.createdAt.toISOString().split('T')[0] === dayStr).length;
+    const publishedCount = [...contentByDayData[0], ...contentByDayData[1]].filter(c => c.createdAt.toISOString().split('T')[0] === dayStr).length;
+    
     return {
       name: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
-      leads: recentLeadsData.filter(l => l.createdAt.toISOString().split('T')[0] === dayStr).length,
-      publicados: 0 // In a real scenario, we'd fetch this too
+      leads: leadsCount,
+      publicados: publishedCount
     };
   });
+
+  const totalSources = sourcesCount.reduce((acc, curr) => acc + curr._count._all, 0);
+  const sourcesPercentages = sourcesCount.map(s => ({
+    label: s.source || 'Indefinido',
+    percentage: totalSources > 0 ? Math.round((s._count._all / totalSources) * 100) : 0
+  })).sort((a, b) => b.percentage - a.percentage);
 
   return (
     <div className="space-y-6">
@@ -112,7 +151,7 @@ export default async function AnalyticsPage() {
       <DashboardCharts 
         data={chartData} 
         totalLeads={recentLeadsData.filter(l => l.createdAt >= sevenDaysAgo).length}
-        totalPublicados={0}
+        totalPublicados={[...contentByDayData[0], ...contentByDayData[1]].length}
       />
 
       {/* Detailed Insights Section Area */}
@@ -120,10 +159,16 @@ export default async function AnalyticsPage() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Top Fontes de Leads</h3>
           <div className="space-y-4">
-            <SourceBar label="Site Direto" percentage={65} color="bg-laranja" />
-            <SourceBar label="WhatsApp" percentage={20} color="bg-green-500" />
-            <SourceBar label="Instagram" percentage={10} color="bg-purple-500" />
-            <SourceBar label="Outros" percentage={5} color="bg-gray-400" />
+            {sourcesPercentages.length > 0 ? sourcesPercentages.map((s, idx) => (
+              <SourceBar 
+                key={idx} 
+                label={s.label} 
+                percentage={s.percentage} 
+                color={idx === 0 ? 'bg-laranja' : idx === 1 ? 'bg-blue-500' : 'bg-gray-400'} 
+              />
+            )) : (
+              <p className="text-sm text-gray-500 italic">Nenhuma fonte registrada.</p>
+            )}
           </div>
         </div>
         
@@ -131,16 +176,46 @@ export default async function AnalyticsPage() {
           <h3 className="text-lg font-bold text-gray-900 mb-4">Ações Recomendadas</h3>
           <ul className="space-y-3">
             <RecommendationItem 
-              text="Você tem 3 leads sem resposta há 48h. Aumente sua conversão entrando em contato."
+              text="Você tem leads sem resposta há 48h. Aumente sua conversão entrando em contato."
               action="Ver Leads"
               link="/admin/leads"
             />
             <RecommendationItem 
-              text="Seu último post foi há 10 dias. Tente manter uma frequência semanal para SEO."
+              text="Mantenha seu Blog e Portfólio atualizados para melhorar o SEO orgânico."
               action="Criar Post"
               link="/admin/blog/novo"
             />
           </ul>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-12">
+        <h3 className="text-lg font-bold text-gray-900 mb-6">Conteúdos mais Populares</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Top 3 Blog</h4>
+              <div className="space-y-3">
+                 {topPosts.map((p, i) => (
+                   <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700 truncate mr-4">{p.title}</span>
+                      <span className="text-xs font-bold text-laranja bg-laranja/10 px-2 py-1 rounded">{p.views} views</span>
+                   </div>
+                 ))}
+                 {topPosts.length === 0 && <p className="text-xs text-gray-500 italic">Nenhum post no radar.</p>}
+              </div>
+           </div>
+           <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Top 3 Portfólio</h4>
+              <div className="space-y-3">
+                 {topProjects.map((p, i) => (
+                   <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700 truncate mr-4">{p.title}</span>
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">{p.views} views</span>
+                   </div>
+                 ))}
+                 {topProjects.length === 0 && <p className="text-xs text-gray-500 italic">Nenhum projeto no radar.</p>}
+              </div>
+           </div>
         </div>
       </div>
     </div>

@@ -134,20 +134,20 @@ export default async function AdminDashboard() {
       </div>
 
       {staleLeads > 0 && (
-        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-start gap-3">
-          <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={20} />
+        <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3 shadow-sm shadow-red-500/5 transition-all hover:scale-[1.01]">
+          <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
           <div>
-            <h3 className="text-sm font-bold text-amber-800">Leads sem resposta há mais de 48h</h3>
-            <p className="text-sm text-amber-700 mt-1">{staleLeads} lead(s) precisam de acompanhamento no CRM.</p>
+            <h3 className="text-sm font-bold text-red-900 leading-none">Atenção: Leads Críticos</h3>
+            <p className="text-xs text-red-700 mt-1.5 font-medium">{staleLeads} lead(s) sem resposta há mais de 48h. Priorize o atendimento técnico.</p>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Leads hoje" value={String(leadsToday)} trend={leadTrendLabel} trendUp={leadTrend >= 0} icon={Mail} color="bg-laranja" />
-        <MetricCard title="Leads totais" value={String(totalLeads)} trend={`${leadsToday} hoje`} trendUp={true} icon={Users} color="bg-blue-500" />
-        <MetricCard title="Projetos publicados" value={String(publishedProjects)} trend="conteúdo ativo" trendUp={true} icon={Briefcase} color="bg-purple-500" />
-        <MetricCard title="Posts publicados" value={String(publishedPosts)} trend="conteúdo ativo" trendUp={true} icon={FileText} color="bg-green-500" />
+        <MetricCard title="Leads totais" value={String(totalLeads)} trend={`${leadsToday} hoje`} trendUp={true} icon={Users} color="bg-blue-600" />
+        <MetricCard title="Projetos ativos" value={String(publishedProjects)} trend="Portfólio" trendUp={true} icon={Briefcase} color="bg-[#7C3AED]" />
+        <MetricCard title="Blog / Notícias" value={String(publishedPosts)} trend="Últimas" trendUp={true} icon={FileText} color="bg-emerald-500" />
       </div>
 
       <DashboardCharts data={chartData} totalLeads={last7DaysLeads.length} totalPublicados={last7DaysProjects.length + last7DaysPosts.length} />
@@ -193,18 +193,18 @@ export default async function AdminDashboard() {
 
 function MetricCard({ title, value, trend, trendUp, icon: Icon, color }: { title: string; value: string; trend: string; trendUp: boolean; icon: any; color: string }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-md transition-shadow cursor-pointer">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center text-white shadow-sm`}>
-          <Icon size={20} />
+    <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1">
+      <div className="flex items-center justify-between mb-5">
+        <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center text-white shadow-lg shadow-current/10 transition-transform group-hover:scale-110`}>
+          <Icon size={22} />
         </div>
-        <div className={`flex items-center gap-1 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-          {trendUp ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+        <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+          {trendUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
           {trend}
         </div>
       </div>
-      <h3 className="text-3xl font-bold text-gray-900 mb-1">{value}</h3>
-      <p className="text-sm text-gray-500 font-medium">{title}</p>
+      <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-1">{value}</h3>
+      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-none">{title}</p>
     </div>
   );
 }

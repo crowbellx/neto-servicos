@@ -35,58 +35,39 @@ type NavItem = {
 
 const navItems: Array<{ title: string; items: NavItem[] }> = [
   {
-    title: 'Principal',
+    title: 'Performance',
     items: [
       { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
       { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     ]
   },
   {
-    title: 'Conteúdo do Site',
+    title: 'Comercial & Vendas',
     items: [
-      { name: 'Página Inicial', href: '/admin/conteudo/home', icon: Globe, minRole: 'EDITOR' as const },
-      { name: 'Sobre Nós', href: '/admin/conteudo/sobre', icon: PenSquare, minRole: 'EDITOR' as const },
-      { name: 'Serviços (Intro)', href: '/admin/conteudo/servicos', icon: PenSquare, minRole: 'EDITOR' as const },
-      { name: 'Portfólio (Intro)', href: '/admin/conteudo/portfolio', icon: PenSquare, minRole: 'EDITOR' as const },
-      { name: 'Contato', href: '/admin/conteudo/contato', icon: PenSquare, minRole: 'EDITOR' as const },
-      { name: 'Páginas Fixas', href: '/admin/paginas', icon: PenSquare, minRole: 'EDITOR' as const },
-    ]
-  },
-  {
-    title: 'Conteúdo',
-    items: [
-      { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase, minRole: 'EDITOR' as const },
-      { name: 'Blog', href: '/admin/blog', icon: FileText, minRole: 'EDITOR' as const },
-      { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare, minRole: 'EDITOR' as const },
-      { name: 'Equipe', href: '/admin/equipe', icon: Users, minRole: 'ADMIN' as const },
-    ]
-  },
-  {
-    title: 'Gestão',
-    items: [
-      { name: 'Leads & Mensagens', href: '/admin/leads', icon: Mail, badgeKey: 'leads' },
+      { name: 'Leads & Mensagem', href: '/admin/leads', icon: Mail, badgeKey: 'leads' },
       { name: 'Orçamentos', href: '/admin/orcamentos', icon: FileSignature, minRole: 'EDITOR' },
+      { name: 'Clientes', href: '/admin/clientes', icon: Users, minRole: 'EDITOR' },
       { name: 'Financeiro', href: '/admin/financeiro', icon: DollarSign, minRole: 'ADMIN' },
-      { name: 'Clientes', href: '/admin/clientes', icon: UserSquare2, minRole: 'EDITOR' },
     ]
   },
   {
-    title: 'Site',
+    title: 'Gestão de Conteúdo',
     items: [
-      { name: 'Serviços', href: '/admin/servicos', icon: Settings, minRole: 'VIEWER' as const },
-      { name: 'Mídia', href: '/admin/midia', icon: ImageIcon, minRole: 'EDITOR' as const },
-      { name: 'Menus', href: '/admin/menus', icon: MenuSquare, minRole: 'ADMIN' as const },
+      { name: 'Páginas do Site', href: '/admin/paginas', icon: Globe, minRole: 'EDITOR' },
+      { name: 'Serviços', href: '/admin/servicos', icon: Settings, minRole: 'VIEWER' },
+      { name: 'Portfólio', href: '/admin/portfolio', icon: Briefcase, minRole: 'EDITOR' },
+      { name: 'Blog / Notícias', href: '/admin/blog', icon: FileText, minRole: 'EDITOR' },
+      { name: 'Depoimentos', href: '/admin/depoimentos', icon: MessageSquare, minRole: 'EDITOR' },
     ]
   },
   {
-    title: 'Configurações',
+    title: 'Administração',
     items: [
-      { name: 'Geral', href: '/admin/configuracoes/geral', icon: Settings, minRole: 'ADMIN' },
-      { name: 'SEO', href: '/admin/configuracoes/seo', icon: Settings, minRole: 'ADMIN' },
-      { name: 'Integrações', href: '/admin/configuracoes/integracoes', icon: Settings, minRole: 'ADMIN' },
-      { name: 'E-mail', href: '/admin/configuracoes/email', icon: Mail, minRole: 'ADMIN' },
-      { name: 'Usuários', href: '/admin/configuracoes/usuarios', icon: Users, minRole: 'ADMIN' },
-      { name: 'Logs & Auditoria', href: '/admin/configuracoes/logs', icon: FileText, minRole: 'ADMIN' },
+      { name: 'Mídia', href: '/admin/midia', icon: ImageIcon, minRole: 'EDITOR' },
+      { name: 'Menus & Rodapé', href: '/admin/menus', icon: MenuSquare, minRole: 'ADMIN' },
+      { name: 'Equipe', href: '/admin/equipe', icon: UserSquare2, minRole: 'ADMIN' },
+      { name: 'Configurações', href: '/admin/configuracoes/geral', icon: Settings, minRole: 'ADMIN' },
+      { name: 'Logs de Sistema', href: '/admin/configuracoes/logs', icon: Files, minRole: 'ADMIN' },
     ]
   }
 ];
@@ -105,32 +86,37 @@ export default function AdminSidebar({
   };
 
   return (
-    <aside className={`bg-grafite text-white transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-60'} border-r border-white/10`}>
-      <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-        {!collapsed && <span className="font-bold text-lg font-titulo">Neto Admin</span>}
+    <aside className={`bg-[#1A1C1E] text-white transition-all duration-300 flex flex-col ${collapsed ? 'w-20' : 'w-64'} border-r border-white/5 shadow-2xl z-40`}>
+      <div className="h-20 flex items-center justify-between px-6 border-b border-white/5">
+        {!collapsed && (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-laranja rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-laranja/20">N</div>
+            <span className="font-bold text-lg tracking-tight text-white/90">Painel Neto</span>
+          </div>
+        )}
         <button 
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+          className={`p-2 rounded-xl hover:bg-white/10 text-white/50 hover:text-white transition-all ${collapsed ? 'mx-auto' : ''}`}
         >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto py-6 scrollbar-none hover:scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {navItems.map((section, i) => (
-          <div key={i} className="mb-6">
+          <div key={i} className="mb-8">
             {!collapsed && (
-              <h3 className="px-4 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+              <h3 className="px-6 text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3">
                 {section.title}
               </h3>
             )}
-            <ul className="space-y-1">
+            <ul className="space-y-1 px-3">
               {section.items.map((item, j) => {
                 if (item.minRole && !hasRequiredRole(userRole, item.minRole)) {
                   return null;
                 }
 
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
                 const Icon = item.icon;
                 const badgeValue = item.badgeKey ? badges[item.badgeKey] : 0;
                 
@@ -138,29 +124,29 @@ export default function AdminSidebar({
                   <li key={j}>
                     <Link 
                       href={item.href}
-                      className={`flex items-center px-4 py-2.5 mx-2 rounded-lg transition-colors group relative ${
+                      className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 group relative ${
                         isActive 
-                          ? 'bg-laranja/15 text-laranja' 
-                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                          ? 'bg-laranja text-white shadow-lg shadow-laranja/10' 
+                          : 'text-white/40 hover:bg-white/[0.03] hover:text-white'
                       }`}
                       title={collapsed ? item.name : undefined}
                     >
-                      <Icon size={20} className={`shrink-0 ${isActive ? 'text-laranja' : 'text-white/40 group-hover:text-white'}`} />
+                      <Icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-white/30 group-hover:text-white group-hover:scale-110 transition-transform'}`} />
                       
                       {!collapsed && (
-                        <span className="ml-3 text-sm font-medium truncate flex-1">
+                        <span className="ml-3 text-sm font-medium truncate flex-1 tracking-tight">
                           {item.name}
                         </span>
                       )}
 
                       {!collapsed && badgeValue > 0 && (
-                        <span className="ml-auto bg-laranja text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white text-laranja' : 'bg-laranja text-white'}`}>
                           {badgeValue}
                         </span>
                       )}
 
                       {collapsed && badgeValue > 0 && (
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-laranja rounded-full"></span>
+                        <span className="absolute top-2 right-2 w-2 h-2 bg-laranja rounded-full ring-2 ring-[#1A1C1E]"></span>
                       )}
                     </Link>
                   </li>
@@ -171,12 +157,22 @@ export default function AdminSidebar({
         ))}
       </div>
 
-      <div className="p-4 border-t border-white/10 text-xs text-white/40 flex items-center justify-between">
-        {!collapsed && <span>Admin v1.0.0</span>}
-        <div className="flex items-center gap-2" title="API Online">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          {!collapsed && <span>Online</span>}
-        </div>
+      <div className="p-6 border-t border-white/5 bg-black/10">
+        {!collapsed ? (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Versão 1.5.0</span>
+              <div className="flex items-center gap-1.5 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="text-[10px] font-bold text-green-500 uppercase tracking-tighter">Online</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          </div>
+        )}
       </div>
     </aside>
   );
