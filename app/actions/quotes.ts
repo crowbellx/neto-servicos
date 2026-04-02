@@ -79,6 +79,21 @@ export async function updateQuote(id: string, data: any) {
           quoteId: quote.id,
         }
       });
+
+      const totalCost = (quote.costMaterial || 0) + (quote.costLabor || 0);
+      if (totalCost > 0) {
+        await prisma.transaction.create({
+          data: {
+            description: `Custos Operacionais: ${quote.number}`,
+            type: 'EXPENSE',
+            amount: totalCost,
+            status: 'PENDING',
+            date: new Date(),
+            quoteId: quote.id,
+          }
+        });
+      }
+
       revalidatePath('/admin/financeiro');
     }
 

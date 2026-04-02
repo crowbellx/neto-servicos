@@ -4,8 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { createQuote, updateQuote } from '@/app/actions/quotes';
-import { ArrowLeft, Save, Send, Share2 } from 'lucide-react';
+import { createQuote, updateQuote, deleteQuote } from '@/app/actions/quotes';
+import { ArrowLeft, Save, Send, Share2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface QuoteFormProps {
@@ -27,12 +27,23 @@ export default function QuoteForm({ initialData, clients }: QuoteFormProps) {
       service: initialData?.service || '',
       description: initialData?.description || '',
       value: initialData?.value || 0,
+      costMaterial: initialData?.costMaterial || 0,
+      costLabor: initialData?.costLabor || 0,
+      deliveryTime: initialData?.deliveryTime || '',
       status: initialData?.status || 'PENDING',
     }
   });
 
   const clientId = watch('clientId');
   const watchStatus = watch('status');
+  const watchedValue = watch('value');
+  const watchedMaterial = watch('costMaterial');
+  const watchedLabor = watch('costLabor');
+
+  const grossRevenue = parseFloat(watchedValue?.toString() || '0');
+  const totalCost = parseFloat(watchedMaterial?.toString() || '0') + parseFloat(watchedLabor?.toString() || '0');
+  const netProfit = grossRevenue - totalCost;
+  const profitMargin = grossRevenue > 0 ? ((netProfit / grossRevenue) * 100).toFixed(1) : '0.0';
 
   const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
@@ -57,6 +68,8 @@ export default function QuoteForm({ initialData, clients }: QuoteFormProps) {
         const payload = {
           ...data,
           value: parseFloat(data.value),
+          costMaterial: parseFloat(data.costMaterial),
+          costLabor: parseFloat(data.costLabor),
         };
 
         const res = initialData?.id 
@@ -75,6 +88,26 @@ export default function QuoteForm({ initialData, clients }: QuoteFormProps) {
         }
       } catch (err) {
         toast.error('Ocorreu um erro inesperado.');
+      }
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!initialData?.id) return;
+    if (!confirm('Tem certeza que deseja excluir este orçamento? Isso não afetará as receitas/despesas já lançadas no financeiro, mas removerá o registro daqui.')) return;
+    
+    startTransition(async () => {
+      try {
+        const res = await deleteQuote(initialData.id);
+        if (res.success) {
+          toast.success('Orçamento excluído com sucesso.');
+          router.push('/admin/orcamentos');
+          router.refresh();
+        } else {
+          toast.error(res.error || 'Erro ao excluir orçamento.');
+        }
+      } catch (err) {
+        toast.error('Erro inesperado ao excluir.');
       }
     });
   };
@@ -118,6 +151,16 @@ export default function QuoteForm({ initialData, clients }: QuoteFormProps) {
         </div>
         
         <div className="flex items-center gap-3">
+          {initialData && (
+             <button 
+               type="button"
+               onClick={handleDelete}
+               disabled={isPending}
+               className="flex items-center gap-2 px-4 py-2 bg-white text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-50"
+             >
+                <Trash2 size={18} /> Excluir
+             </button>
+          )}
           <button 
             type="submit"
             disabled={isPending}
@@ -175,9 +218,50 @@ export default function QuoteForm({ initialData, clients }: QuoteFormProps) {
               <textarea {...register('description')} className="w-full border border-gray-200 rounded-lg p-3 text-sm h-32" placeholder="Descreva os entregáveis e os termos do serviço..." required />
             </div>
 
-            <div className="w-1/2">
-               <label className="block text-sm font-medium text-gray-700 mb-1">Valor Final (R$)</label>
-               <input type="number" step="0.01" {...register('value')} className="w-full border border-gray-200 rounded-lg p-2.5 text-xl font-medium text-laranja" required />
+            <div className="grid grid-cols-2 gap-4">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Prazo de Entrega Estimado</label>
+                 <input {...register('deliveryTime')} placeholder="Ex: 15 dias úteis" className="w-full border border-gray-200 rounded-lg p-2.5 text-sm" />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Valor Final Kobrado (R$)</label>
+                 <input type="number" step="0.01" {...register('value')} className="w-full border border-gray-200 rounded-lg p-2.5 text-xl font-medium text-laranja text-right" required />
+               </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+            <h3 className="font-bold text-gray-900 border-b border-gray-200 pb-2 flex items-center justify-between">
+              Custos e Metas (Apenas Interno)
+              {netProfit > 0 ? (
+                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">
+                  {profitMargin}% Margem Real
+                </span>
+              ) : (
+                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-bold">
+                  Déficit
+                </span>
+              )}
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custo C/ Terceiros/Material (R$)</label>
+                <input type="number" step="0.01" {...register('costMaterial')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm bg-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custo C/ Mão de Obra (R$)</label>
+                <input type="number" step="0.01" {...register('costLabor')} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm bg-white" />
+              </div>
+            </div>
+
+            <div className="pt-2">
+               <div className="flex justify-between items-center bg-white p-3 rounded border border-gray-200">
+                  <span className="text-sm font-medium text-gray-500">Lucro Líquido Estimado:</span>
+                  <span className={`text-lg font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(netProfit)}
+                  </span>
+               </div>
             </div>
           </div>
         </div>

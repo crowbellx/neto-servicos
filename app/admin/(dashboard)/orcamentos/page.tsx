@@ -1,8 +1,9 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { FileSignature, Plus, Search, Filter } from 'lucide-react';
+import { FileSignature, Plus, Search, Filter, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { getQuotes } from '@/app/actions/quotes';
+import QuoteListActions from '@/components/admin/quotes/QuoteListActions';
 
 export default async function OrcamentosPage() {
   const session = await auth();
@@ -54,14 +55,22 @@ export default async function OrcamentosPage() {
                   <th className="font-semibold p-4">Número</th>
                   <th className="font-semibold p-4">Cliente</th>
                   <th className="font-semibold p-4">Serviço/Produto</th>
-                  <th className="font-semibold p-4">Valor</th>
+                  <th className="font-semibold p-4">Preço Bruto</th>
+                  <th className="font-semibold p-4">Lucro Líq.</th>
                   <th className="font-semibold p-4">Status</th>
-                  <th className="font-semibold p-4 text-right">Cadastrado em</th>
+                  <th className="font-semibold p-4 text-center">Cadastrado em</th>
+                  <th className="font-semibold p-4 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {list.map((quote: any) => (
-                  <tr key={quote.id} className="hover:bg-gray-50 transition-colors">
+                {list.map((quote: any) => {
+                  const gross = quote.value || 0;
+                  const costs = (quote.costMaterial || 0) + (quote.costLabor || 0);
+                  const net = gross - costs;
+                  const isProfitable = net > 0;
+                  
+                  return (
+                    <tr key={quote.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 whitespace-nowrap font-medium text-gray-900">
                       <Link href={`/admin/orcamentos/${quote.id}`} className="hover:text-laranja hover:underline">
                         {quote.number}
@@ -69,18 +78,30 @@ export default async function OrcamentosPage() {
                     </td>
                     <td className="p-4">{quote.clientName || quote.client?.name || '-'}</td>
                     <td className="p-4">{quote.service}</td>
-                    <td className="p-4 font-medium text-gray-900">{formatCurrency(quote.value || 0)}</td>
+                    <td className="p-4 font-medium text-gray-900">{formatCurrency(gross)}</td>
+                    <td className="p-4">
+                      {gross > 0 ? (
+                         <div className={`flex items-center gap-1 text-xs font-bold ${isProfitable ? 'text-emerald-600' : 'text-red-600'}`}>
+                           <TrendingUp size={12} className={!isProfitable ? 'rotate-180' : ''} />
+                           {formatCurrency(net)}
+                         </div>
+                      ) : '-'}
+                    </td>
                     <td className="p-4">
                       {quote.status === 'PENDING' && <span className="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-0.5 rounded font-medium">Rascunho</span>}
                       {quote.status === 'SENT' && <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded font-medium">Enviado</span>}
                       {quote.status === 'APPROVED' && <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded font-medium">Aprovado</span>}
                       {quote.status === 'REJECTED' && <span className="bg-red-100 text-red-800 text-xs px-2.5 py-0.5 rounded font-medium">Rejeitado</span>}
                     </td>
-                    <td className="p-4 text-right text-gray-500">
+                    <td className="p-4 text-center text-gray-500">
                       {new Date(quote.createdAt).toLocaleDateString('pt-BR')}
                     </td>
+                    <td className="p-4 text-right">
+                       <QuoteListActions quote={quote} />
+                    </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>

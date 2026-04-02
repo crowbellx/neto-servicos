@@ -1,16 +1,22 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getFinanceSummary, getTransactions } from '@/app/actions/finance';
-import { DollarSign, ArrowUpCircle, ArrowDownCircle, Plus, FileText } from 'lucide-react';
+import { DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Tag } from 'lucide-react';
 import Link from 'next/link';
+import FinanceClientHeader from './FinanceClientHeader';
+import TransactionActions from '@/components/admin/finance/TransactionActions';
 
-export default async function FinanceiroPage() {
+export default async function FinanceiroPage({ searchParams }: { searchParams: Promise<{ month?: string, year?: string }> }) {
   const session = await auth();
   if (!session) redirect('/admin/login');
 
+  const sp = await searchParams;
+  const month = sp.month ? parseInt(sp.month) : new Date().getMonth() + 1;
+  const year = sp.year ? parseInt(sp.year) : new Date().getFullYear();
+
   const [summaryRes, transactionsRes] = await Promise.all([
-    getFinanceSummary(),
-    getTransactions({ limit: 50 })
+    getFinanceSummary(month, year),
+    getTransactions({ limit: 50, month, year })
   ]);
 
   const summary = (summaryRes.success ? summaryRes.data : { income: 0, expense: 0, balance: 0 }) || { income: 0, expense: 0, balance: 0 };
@@ -24,13 +30,13 @@ export default async function FinanceiroPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <DollarSign className="text-emerald-500" /> Financeiro
+            <DollarSign className="text-emerald-500" /> Visão Geral
           </h1>
-          <p className="text-sm text-gray-500">Mês atual: Acompanhe receitas e despesas.</p>
+          <p className="text-sm text-gray-500">Acompanhe as receitas, despesas e saldo do mês.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition">
-          <Plus size={16} /> Nova Transação
-        </button>
+        <div className="flex gap-4 items-center">
+            <FinanceClientHeader initialMonth={month} initialYear={year} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -76,9 +82,10 @@ export default async function FinanceiroPage() {
                 <tr>
                   <th className="font-semibold p-4">Data</th>
                   <th className="font-semibold p-4">Descrição</th>
-                  <th className="font-semibold p-4">Orçamento Base</th>
-                  <th className="font-semibold p-4">Tipo</th>
+                  <th className="font-semibold p-4">Origem / Categoria</th>
+                  <th className="font-semibold p-4 border-l border-gray-100">Tipo</th>
                   <th className="font-semibold p-4 text-right">Valor</th>
+                  <th className="font-semibold p-4 text-right border-l border-gray-100">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -88,17 +95,21 @@ export default async function FinanceiroPage() {
                     <td className="p-4">
                       {tx.description}
                       <br/>
-                      {tx.status === 'PENDING' && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium mt-1 inline-block">Pendente</span>}
-                      {tx.status === 'PAID' && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium mt-1 inline-block">Pago</span>}
+                      {tx.status === 'PENDING' && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold mt-1 inline-block uppercase tracking-wider">Pendente</span>}
+                      {tx.status === 'PAID' && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold mt-1 inline-block uppercase tracking-wider">Liquidado</span>}
                     </td>
                     <td className="p-4 whitespace-nowrap">
                        {tx.quote ? (
-                         <Link href={`/admin/orcamentos/${tx.quoteId}`} className="text-laranja hover:underline flex items-center gap-1">
-                           <FileText size={14} /> {tx.quote.number}
+                         <Link href={`/admin/orcamentos/${tx.quoteId}`} className="text-laranja hover:underline flex items-center gap-1 font-medium text-xs">
+                           <FileText size={12} /> {tx.quote.number}
                          </Link>
-                       ) : '-'}
+                       ) : (
+                         <span className="text-gray-500 flex items-center gap-1 text-xs">
+                           <Tag size={12} /> {tx.category || 'Manual / Sem Categoria'}
+                         </span>
+                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 border-l border-gray-50">
                       {tx.type === 'INCOME' ? (
                         <span className="text-emerald-600 font-medium flex items-center gap-1"><ArrowUpCircle size={14}/> Receita</span>
                       ) : (
@@ -107,6 +118,9 @@ export default async function FinanceiroPage() {
                     </td>
                     <td className={`p-4 text-right font-bold ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
                       {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
+                    </td>
+                    <td className="p-4 border-l border-gray-50">
+                      <TransactionActions transaction={tx} />
                     </td>
                   </tr>
                 ))}

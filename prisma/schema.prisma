@@ -236,6 +236,9 @@ model Quote {
   service     String
   description String
   value       Float?
+  costMaterial Float?  @default(0)
+  costLabor    Float?  @default(0)
+  deliveryTime String?
   status      String   @default("PENDING") // PENDING, SENT, APPROVED, REJECTED, EXPIRED
   validUntil  DateTime?
   createdAt   DateTime @default(now())
@@ -248,6 +251,7 @@ model Transaction {
   description String
   type        String   @default("INCOME") // INCOME, EXPENSE
   amount      Float
+  category    String?
   status      String   @default("PAID") // PAID, PENDING, OVERDUE
   date        DateTime
   quoteId     String?
