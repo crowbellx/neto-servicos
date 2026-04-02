@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Globe,
   PenSquare,
+  DollarSign,
 } from 'lucide-react';
 import { hasRequiredRole } from '@/lib/auth/rbac';
 
@@ -65,6 +66,7 @@ const navItems: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { name: 'Leads & Mensagens', href: '/admin/leads', icon: Mail, badgeKey: 'leads' },
       { name: 'Orçamentos', href: '/admin/orcamentos', icon: FileSignature, minRole: 'EDITOR' },
+      { name: 'Financeiro', href: '/admin/financeiro', icon: DollarSign, minRole: 'ADMIN' },
       { name: 'Clientes', href: '/admin/clientes', icon: UserSquare2, minRole: 'EDITOR' },
     ]
   },

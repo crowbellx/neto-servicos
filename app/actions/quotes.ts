@@ -53,12 +53,35 @@ export async function createQuote(data: any) {
 
 export async function updateQuote(id: string, data: any) {
   try {
+    const existing = await prisma.quote.findUnique({ 
+      where: { id }, 
+      include: { transactions: true } 
+    });
+    
+    if (!existing) return { success: false, error: 'Quote not found' };
+
     const quote = await prisma.quote.update({
       where: { id },
       data: {
         ...data,
       },
     });
+
+    // Capture the revenue automatically if it's approved and has a value
+    if (data.status === 'APPROVED' && quote.value && existing.transactions.length === 0) {
+      await prisma.transaction.create({
+        data: {
+          description: `Orçamento Aprovado: ${quote.number} - ${quote.service}`,
+          type: 'INCOME',
+          amount: quote.value,
+          status: 'PENDING', // Default to pending until payment is confirmed
+          date: new Date(),
+          quoteId: quote.id,
+        }
+      });
+      revalidatePath('/admin/financeiro');
+    }
+
     revalidatePath('/admin/orcamentos');
     revalidatePath(`/admin/orcamentos/${id}`);
     return { success: true, data: quote };
