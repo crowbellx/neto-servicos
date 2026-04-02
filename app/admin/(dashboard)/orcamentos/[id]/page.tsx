@@ -4,13 +4,15 @@ import QuoteForm from '@/components/admin/quotes/QuoteForm';
 import { getClients } from '@/app/actions/clients';
 import { getQuoteById } from '@/app/actions/quotes';
 
-export default async function EditarOrcamentoPage({ params }: { params: { id: string } }) {
+export default async function EditarOrcamentoPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) redirect('/admin/login');
 
+  const { id } = await params;
+
   const [clientsRes, quoteRes] = await Promise.all([
     getClients(),
-    getQuoteById(params.id)
+    getQuoteById(id)
   ]);
 
   const clients = (clientsRes.success ? clientsRes.data : []) || [];
