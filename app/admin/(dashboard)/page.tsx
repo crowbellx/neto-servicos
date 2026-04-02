@@ -128,7 +128,7 @@ export default async function AdminDashboard() {
   const leadTrendLabel = `${leadTrend >= 0 ? '+' : ''}${leadTrend.toFixed(1)}%`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500">Bem-vindo, {session.user?.name}</p>
@@ -144,7 +144,7 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Leads hoje" value={String(leadsToday)} trend={leadTrendLabel} trendUp={leadTrend >= 0} icon={Mail} color="bg-laranja" />
         <MetricCard title="Leads totais" value={String(totalLeads)} trend={`${leadsToday} hoje`} trendUp={true} icon={Users} color="bg-blue-600" />
         <MetricCard title="Projetos ativos" value={String(publishedProjects)} trend="Portfólio" trendUp={true} icon={Briefcase} color="bg-[#7C3AED]" />

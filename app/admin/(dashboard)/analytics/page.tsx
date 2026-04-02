@@ -110,7 +110,7 @@ export default async function AnalyticsPage() {
   })).sort((a, b) => b.percentage - a.percentage);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics & Performance</h1>
@@ -127,7 +127,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AnalyticsCard 
           title="Taxa de Conversão" 
           value={`${conversionRate}%`} 

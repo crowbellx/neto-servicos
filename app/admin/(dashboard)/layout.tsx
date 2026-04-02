@@ -57,12 +57,12 @@ export default async function DashboardLayout({
   ]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       <AdminSidebar
         userRole={userRole}
         unreadLeadCount={unreadLeadCount}
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         <AdminTopbar
           user={session.user}
           unreadNotificationCount={unreadNotificationCount}
@@ -77,7 +77,7 @@ export default async function DashboardLayout({
             tone: notification.type === 'ERROR' ? 'danger' : 'default',
           }))}
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
           {children}
         </main>
       </div>
