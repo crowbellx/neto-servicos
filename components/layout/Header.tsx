@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -70,12 +70,18 @@ export default function Header({ general = {} }: HeaderProps) {
   return (
     <header
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/90 backdrop-blur-md border-b border-black/5 shadow-sm py-4'
-          : 'bg-transparent py-6'
+        isScrolled ? 'py-4' : 'py-6'
       }`}
     >
-      <div className="container-custom flex items-center justify-between">
+      <div 
+        className={`absolute inset-0 transition-all duration-300 ${
+          isScrolled 
+            ? 'bg-white/90 backdrop-blur-md border-b border-black/5 shadow-sm' 
+            : 'bg-transparent'
+        }`} 
+      />
+
+      <div className="container-custom flex items-center justify-between relative z-10">
         <Link href="/" className="flex items-center gap-2 z-50 group">
           {general.logo ? (
             <div className="relative w-12 h-12">
@@ -172,7 +178,7 @@ export default function Header({ general = {} }: HeaderProps) {
           ))}
         </nav>
 
-        <div className="hidden lg:block">
+        <div className="hidden lg:block relative z-10">
           <Link
             href="/contato"
             className="bg-laranja text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-[#D4651A] hover:scale-105 active:scale-95 transition-all shadow-cor"
@@ -183,7 +189,7 @@ export default function Header({ general = {} }: HeaderProps) {
 
         {/* Mobile Menu Toggle */}
         <button
-          className="lg:hidden text-t-primary z-50 p-2"
+          className="lg:hidden text-t-primary relative z-50 p-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label="Toggle menu"
         >
