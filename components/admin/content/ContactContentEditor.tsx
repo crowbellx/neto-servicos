@@ -32,7 +32,6 @@ export default function ContactContentEditor({ initialData }: { initialData: Con
     email:    initialData?.info?.email    || 'contato@netoservicos.com.br',
     address:  initialData?.info?.address  || 'Rua Exemplo, 123 - Centro',
     hours:    initialData?.info?.hours    || 'Seg–Sex 8h–18h | Sáb 8h–12h',
-    mapLink:  initialData?.info?.mapLink  || '',
   });
 
   function saveSection(key: string, data: any) {
@@ -137,11 +136,7 @@ export default function ContactContentEditor({ initialData }: { initialData: Con
                     <input className={`${inputCls} pl-10`} placeholder="Seg–Sex 8h–18h" value={info.hours} onChange={e => setInfo(p => ({ ...p, hours: e.target.value }))} />
                   </div>
                 </div>
-                <div>
-                  <label className={labelCls}>Link Embed Google Maps</label>
-                  <input className={inputCls} placeholder="https://www.google.com/maps/embed?..." value={info.mapLink} onChange={e => setInfo(p => ({ ...p, mapLink: e.target.value }))} />
                 </div>
-              </div>
             </div>
             <button onClick={() => saveSection('contato_info', info)} disabled={isPending} className="flex items-center gap-2 px-6 py-3 bg-laranja text-white rounded-lg font-semibold hover:bg-[#D4651A] transition-colors disabled:opacity-70">
               <Save size={18} /> {isPending ? 'Salvando...' : 'Salvar Informações'}

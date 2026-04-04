@@ -9,7 +9,6 @@ type ContatoData = {
   email?: string;
   address?: string;
   hours?: string;
-  mapLink?: string;
 } | null;
 
 const DEFAULTS = {
@@ -17,7 +16,6 @@ const DEFAULTS = {
   email: 'contato@netoservicos.com.br',
   address: 'Rua Exemplo, 123 - Centro',
   hours: 'Seg–Sex 8h–18h | Sáb 8h–12h',
-  mapLink: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.197368558778!2d-46.65888892466981!3d-23.56133746158529!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%20-%20Bela%20Vista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1710000000000!5m2!1spt-BR!2sbr',
 };
 
 export default function ContatoSection({ data }: { data?: ContatoData }) {
@@ -96,7 +94,7 @@ export default function ContatoSection({ data }: { data?: ContatoData }) {
           {/* Map Embed */}
           <div className="rounded-2xl overflow-hidden shadow-sm border border-black/5 h-[240px] relative bg-grafite-soft/10">
             <iframe
-              src={d.mapLink}
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(d.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
               width="100%"
               height="100%"
               style={{ border: 0 }}
